@@ -1,7 +1,6 @@
 from typing import List, Tuple
 import pkg_resources
 
-
 class SentenceTokenizer:
     """ Base class for all sentence tokenizers in this project."""
 
@@ -17,7 +16,7 @@ class SentenceTokenizer:
             return ICUSentenceTokenizer(name)
 
 
-class ICUSentenceTokenizer:
+class ICUSentenceTokenizer(SentenceTokenizer):
     """ Segment text to sentences. """
 
     def __init__(self, locale="en"):

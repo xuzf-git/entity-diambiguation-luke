@@ -20,7 +20,7 @@ wikipedia2vec = "*"
 comet-ml = { version = "*", optional = true }
 seqeval = { version = "*", optional = true }
 pyjnius = {version = "*", optional = true}
-pyicu = {version = "*", optional = true}
+PyICU = "^2.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
