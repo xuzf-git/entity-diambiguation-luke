@@ -459,7 +459,7 @@ description = "Python bindings for Jsonnet - The data templating language"
 name = "jsonnet"
 optional = false
 python-versions = "*"
-version = "0.17.0"
+version = "0.16.0"
 
 [[package]]
 category = "main"
@@ -1457,7 +1457,7 @@ icu = ["pyicu"]
 opennlp = ["pyjnius"]
 
 [metadata]
-content-hash = "9d576b2f742708e5f61d20848c6146d5c530c177e616911087b7fb49581cc88f"
+content-hash = "891d80e16a8046d47af0e9ef6417c908938059fbc9eead2af7f5f33d549bcc2a"
 python-versions = "^3.6.1"
 
 [metadata.files]
@@ -1718,7 +1718,7 @@ joblib = [
     {file = "joblib-0.15.1.tar.gz", hash = "sha256:61e49189c84b3c5d99a969d314853f4d1d263316cc694bec17548ebaa9c47b6e"},
 ]
 jsonnet = [
-    {file = "jsonnet-0.17.0.tar.gz", hash = "sha256:23ffcd4d03a10af7b20b53feee16627debe28345a4d7d5ed07881b7444553bfb"},
+    {file = "jsonnet-0.16.0.tar.gz", hash = "sha256:4d6eff8c17e146dccd244eda45317577cd5e264ce8d5d0676f1f36afdc01307e"},
 ]
 jsonpickle = [
     {file = "jsonpickle-1.4.2-py2.py3-none-any.whl", hash = "sha256:2ac5863099864c63d7f0c367af5e512c94f3384977dd367f2eae5f2303f7b92c"},

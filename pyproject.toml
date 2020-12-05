@@ -22,7 +22,7 @@ seqeval = { version = "*", optional = true }
 pyjnius = {version = "*", optional = true}
 pyicu = {version = "*", optional = true}
 allennlp = "^1.2.2"
-jsonnet = "^0.17.0"
+jsonnet = "0.16.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
