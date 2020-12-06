@@ -6,12 +6,13 @@ import tqdm
 import logging
 
 
-from multilingual.retrieval.reader import BUCCReader, parse_bucc_file
+from multilingual.retrieval.reader import parse_bucc_file
 from multilingual.retrieval.scoring_functions import ScoringFunction
 from multilingual.retrieval.retrievers import Retriever
 from multilingual.retrieval.metrics.f1_score import compute_f1_score
 from multilingual.retrieval.models.seq2vec_encoder import Seq2VecEncoder
 
+from allennlp.nn import util as nn_util
 from allennlp.common.util import import_module_and_submodules
 from allennlp.data import PyTorchDataLoader, DatasetReader, Vocabulary
 from allennlp.common.params import Params, _environment_variables
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 @click.option("--batch_size", default=32)
 @click.option("--scoring-function", default="cosine")
 @click.option("--retriever", default="margin")
+@click.option("--cuda-device", default=-1)
 @click.option("--debug", is_flag=True)
 @torch.no_grad()
 def evaluate_bucc(
@@ -38,6 +40,7 @@ def evaluate_bucc(
     batch_size: int,
     scoring_function: str,
     retriever: str,
+    cuda_device: int,
     debug: bool,
 ):
 
@@ -67,15 +70,23 @@ def evaluate_bucc(
         source_model = Seq2VecEncoder.from_params(vocab=vocab, params=config_params.pop("source_model"))
         target_model = Seq2VecEncoder.from_params(vocab=vocab, params=config_params.pop("target_model"))
 
+    if cuda_device > 0:
+        device = torch.device(f"cuda: {cuda_device}")
+    else:
+        device = torch.device("cpu")
+    source_model.to(device)
+    target_model.to(device)
+
     gold_indices = [idx_pair for idx_pair in parse_bucc_file(bucc_gold_data_path)]
 
     source_data_loader = PyTorchDataLoader(source_dataset, batch_size=batch_size)
     target_data_loader = PyTorchDataLoader(target_dataset, batch_size=batch_size)
 
-    def _extract_sentence_embeddings(data_loader, model, debug):
+    def _extract_sentence_embeddings(data_loader, model, cuda_device, debug):
         sentence_embeddings = []
         indices = []
         for batch in tqdm.tqdm(data_loader):
+            nn_util.move_to_device(batch, cuda_device)
             indices += batch.pop("index")
             if debug:
                 sentence_embeddings.append(torch.rand(len(batch), 1))
@@ -86,9 +97,13 @@ def evaluate_bucc(
         return sentence_embeddings, indices
 
     logger.info("Extracting embeddings from source...")
-    source_embeddings, source_indices = _extract_sentence_embeddings(source_data_loader, source_model, debug=debug)
+    source_embeddings, source_indices = _extract_sentence_embeddings(
+        source_data_loader, source_model, cuda_device=cuda_device, debug=debug
+    )
     logger.info("Extracting embeddings from target...")
-    target_embeddings, target_indices = _extract_sentence_embeddings(target_data_loader, target_model, debug=debug)
+    target_embeddings, target_indices = _extract_sentence_embeddings(
+        target_data_loader, target_model, cuda_device=cuda_device, debug=debug
+    )
 
     logger.info("Calculating scores...")
     scoring_function = ScoringFunction.by_name(scoring_function)()
