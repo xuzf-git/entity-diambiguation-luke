@@ -86,7 +86,7 @@ def evaluate_bucc(
         sentence_embeddings = []
         indices = []
         for batch in tqdm.tqdm(data_loader):
-            nn_util.move_to_device(batch, device)
+            batch = nn_util.move_to_device(batch, device)
             indices += batch.pop("index")
             if debug:
                 sentence_embeddings.append(torch.rand(len(batch), 1))
