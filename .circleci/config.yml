@@ -8,13 +8,13 @@ jobs:
       - checkout
       - run: sudo apt-get update
       - run: sudo apt-get install libicu-dev
-      - run: pip install -U pip
       - restore_cache:
           keys:
             - deps-{{ checksum "poetry.lock" }}
       - run:
           name: Install Dependencies
           command: |
+            poetry run pip install -U pip
             poetry install
             poetry install -E icu
             poetry install -E opennlp
