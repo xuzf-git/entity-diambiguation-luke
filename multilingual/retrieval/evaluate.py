@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 @click.argument("bucc-source-data-path")
 @click.argument("bucc-target-data-path")
 @click.argument("bucc-gold-data-path")
-@click.option("--batch_size", default=32)
+@click.option("--batch-size", default=32)
 @click.option("--scoring-function", default="cosine")
 @click.option("--retriever", default="margin")
 @click.option("--cuda-device", default=-1)
@@ -70,8 +70,8 @@ def evaluate_bucc(
         source_model = Seq2VecEncoder.from_params(vocab=vocab, params=config_params.pop("source_model"))
         target_model = Seq2VecEncoder.from_params(vocab=vocab, params=config_params.pop("target_model"))
 
-    if cuda_device > 0:
-        device = torch.device(f"cuda: {cuda_device}")
+    if cuda_device > -1:
+        device = torch.device(f"cuda:{cuda_device}")
     else:
         device = torch.device("cpu")
     source_model.to(device)
