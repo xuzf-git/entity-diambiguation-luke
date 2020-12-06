@@ -82,11 +82,11 @@ def evaluate_bucc(
     source_data_loader = PyTorchDataLoader(source_dataset, batch_size=batch_size)
     target_data_loader = PyTorchDataLoader(target_dataset, batch_size=batch_size)
 
-    def _extract_sentence_embeddings(data_loader, model, cuda_device, debug):
+    def _extract_sentence_embeddings(data_loader, model, device, debug):
         sentence_embeddings = []
         indices = []
         for batch in tqdm.tqdm(data_loader):
-            nn_util.move_to_device(batch, cuda_device)
+            nn_util.move_to_device(batch, device)
             indices += batch.pop("index")
             if debug:
                 sentence_embeddings.append(torch.rand(len(batch), 1))
@@ -98,11 +98,11 @@ def evaluate_bucc(
 
     logger.info("Extracting embeddings from source...")
     source_embeddings, source_indices = _extract_sentence_embeddings(
-        source_data_loader, source_model, cuda_device=cuda_device, debug=debug
+        source_data_loader, source_model, device=device, debug=debug
     )
     logger.info("Extracting embeddings from target...")
     target_embeddings, target_indices = _extract_sentence_embeddings(
-        target_data_loader, target_model, cuda_device=cuda_device, debug=debug
+        target_data_loader, target_model, device=device, debug=debug
     )
 
     logger.info("Calculating scores...")
