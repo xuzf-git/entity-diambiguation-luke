@@ -1,20 +1,23 @@
 local model_size = std.parseInt(std.extVar("model_size"));
 local model_size = 300;
 local pretrained_file = std.extVar("PRETRAINED_PATH");
-local batch_size = std.extVar("BATCH_SIZE");
+local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
 
 {
     "source_dataset_reader": {
        "type": "bucc",
        "tokenizer": {"type": "spacy"},
        "token_indexers": {"tokens": {"type": "single_id", "namespace": "source_tokens"}},
-       "stop_word_language": "german"
+       "stop_word_language": "german",
+       "max_instances": 100
+
     },
     "target_dataset_reader": {
        "type": "bucc",
        "tokenizer": {"type": "spacy"},
        "token_indexers": {"tokens": {"type": "single_id", "namespace": "target_tokens"}},
-       "stop_word_language": "english"
+       "stop_word_language": "english",
+       "max_instances": 100
     },
     "vocabulary": {
         "pretrained_files": {"source_tokens": "/Users/linghan/Downloads/wiki.multi.de.vec",

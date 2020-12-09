@@ -17,7 +17,7 @@ class MarginBasedRetriever(Retriever):
         assert method in {"ratio", "distance"}
         self.method = method
 
-    def __call__(self, scores: torch.Tensor):
+    def _post_process_scores(self, scores: torch.Tensor):
         query_topk_average_scores = torch.topk(scores, k=self.k, dim=1)[0].mean(dim=1)
         target_topk_average_scores = torch.topk(scores, k=self.k, dim=0)[0].mean(dim=0)
         margin = (query_topk_average_scores.unsqueeze(1) + target_topk_average_scores) / 2
@@ -27,5 +27,4 @@ class MarginBasedRetriever(Retriever):
             margin_based_scores = scores - margin
         else:
             raise Exception(f"Unexpected method: {self.method}")
-
-        return margin_based_scores.argmax(dim=1)
+        return margin_based_scores

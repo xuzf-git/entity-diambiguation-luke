@@ -7,6 +7,5 @@ class SimpleRetriever(Retriever):
     """
     Simply retrieve the target with the highest score.
     """
-
-    def __call__(self, scores: torch.Tensor):
-        return scores.argmax(dim=1)
+    def _post_process_scores(self, scores: torch.Tensor):
+        return scores

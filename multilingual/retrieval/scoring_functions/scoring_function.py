@@ -20,7 +20,7 @@ class ScoringFunction(Registrable):
         """
         score_shards = []
         for query_shard in tqdm.tqdm(sharding(query_embeddings, self.sharding_size)):
-            score_shard = self._compute_score(query_shard, target_embeddings)
+            score_shard = self._compute_score(query_shard, target_embeddings).detach().cpu()
             score_shards.append(score_shard)
 
         scores = torch.cat(score_shards, dim=0)
