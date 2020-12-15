@@ -6,11 +6,11 @@ import tqdm
 import logging
 
 
-from multilingual.tasks.bucc.reader import parse_bucc_file
-from multilingual.retrieval.scoring_functions import ScoringFunction
-from multilingual.retrieval.retrievers import Retriever
-from multilingual.retrieval.metrics.f1_score import compute_f1_score
-from multilingual.retrieval.models.seq2vec_encoder import Seq2VecEncoder
+from examples.bucc.reader import parse_bucc_file
+from examples.utils.retrieval.scoring_functions import ScoringFunction
+from examples.utils.retrieval.retrievers import Retriever
+from examples.utils.retrieval.metrics import compute_f1_score
+from examples.utils.retrieval.models import Seq2VecEncoder
 
 from allennlp.nn import util as nn_util
 from allennlp.common.util import import_module_and_submodules

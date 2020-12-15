@@ -7,11 +7,11 @@ from allennlp.common import Params
 from luke.pretraining.model import LukePretrainingModel
 from luke.pretraining.validation_evaluator import ValidationEvaluator
 
-from multilingual.tasks.bucc.reader import parse_bucc_file
-from multilingual.tasks.bucc.evaluate import extract_sentence_embeddings
-from multilingual.retrieval.scoring_functions import ScoringFunction
-from multilingual.retrieval.retrievers import Retriever
-from multilingual.retrieval.metrics.f1_score import compute_f1_score
+from examples.bucc.reader import parse_bucc_file
+from examples.bucc.evaluate import extract_sentence_embeddings
+from examples.utils.retrieval.scoring_functions import ScoringFunction
+from examples.utils.retrieval.retrievers import Retriever
+from examples.utils.retrieval.metrics import compute_f1_score
 
 
 class LukeSentenceEmbedding(nn.Module):

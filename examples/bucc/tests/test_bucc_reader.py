@@ -1,4 +1,4 @@
-from multilingual.tasks.bucc.reader import BUCCReader
+from examples.bucc.reader import BUCCReader
 
 from allennlp.data.tokenizers import SpacyTokenizer
 from allennlp.data.token_indexers import SingleIdTokenIndexer
