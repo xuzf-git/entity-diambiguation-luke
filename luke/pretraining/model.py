@@ -1,8 +1,7 @@
 from typing import Optional
 import torch
 from torch import nn
-from torch.nn import CrossEntropyLoss
-from transformers.modeling_bert import ACT2FN, BertLayerNorm, BertPreTrainingHeads
+from transformers.modeling_bert import ACT2FN, BertPreTrainingHeads
 from transformers.modeling_roberta import RobertaLMHead
 
 from luke.model import LukeModel, LukeConfig
@@ -16,7 +15,7 @@ class EntityPredictionHeadTransform(nn.Module):
             self.transform_act_fn = ACT2FN[config.hidden_act]
         else:
             self.transform_act_fn = config.hidden_act
-        self.LayerNorm = BertLayerNorm(config.entity_emb_size, eps=config.layer_norm_eps)
+        self.LayerNorm = nn.LayerNorm(config.entity_emb_size, eps=config.layer_norm_eps)
 
     def forward(self, hidden_states: torch.Tensor):
         hidden_states = self.dense(hidden_states)
@@ -82,7 +81,7 @@ class LukePretrainingModel(LukeModel):
         )
         word_sequence_output, entity_sequence_output = output[:2]
 
-        loss_fn = CrossEntropyLoss(ignore_index=-1)
+        loss_fn = nn.CrossEntropyLoss(ignore_index=-1)
         ret = dict(loss=word_ids.new_tensor(0.0, dtype=model_dtype))
 
         if masked_entity_labels is not None:

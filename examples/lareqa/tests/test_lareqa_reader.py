@@ -1,4 +1,4 @@
-from examples.lareqa import LAReQAReader, parse_lareqa_file
+from examples.lareqa.reader import LAReQAReader, parse_lareqa_file
 
 from allennlp.data.tokenizers import SpacyTokenizer
 from allennlp.data.token_indexers import SingleIdTokenIndexer
