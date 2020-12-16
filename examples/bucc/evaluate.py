@@ -60,7 +60,7 @@ def evaluate_bucc(
 ):
 
     config_params = Params(json.loads(_jsonnet.evaluate_file(config_path, ext_vars=_environment_variables())))
-    import_module_and_submodules("multilingual")
+    import_module_and_submodules("examples")
 
     if "dataset_reader" in config_params:
         reader = DatasetReader.from_params(config_params.pop("dataset_reader"))
