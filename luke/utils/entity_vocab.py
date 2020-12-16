@@ -174,12 +174,13 @@ class EntityVocab(object):
 
 
 @click.command()
-@click.option("entity_vocab_files", "-v", multiple=True)
-@click.option("inter_wiki_db_path", "-i", type=click.Path())
-@click.option("out_file", "-o", type=click.Path())
-@click.option("vocab_size", "-s", type=int)
+@click.option("--entity-vocab-files", "-v", multiple=True)
+@click.option("--inter-wiki-db-path", "-i", type=click.Path())
+@click.option("--out-file", type=click.Path())
+@click.option("--vocab-size", type=int)
+@click.option("--min-num-languages", type=int)
 def build_multilingual_entity_vocab(
-    entity_vocab_files: List[str], inter_wiki_db_path: str, out_file: str, vocab_size: int = 1000000
+    entity_vocab_files: List[str], inter_wiki_db_path: str, out_file: str, vocab_size: int, min_num_languages: int
 ):
 
     for entity_vocab_path in entity_vocab_files:
@@ -226,8 +227,13 @@ def build_multilingual_entity_vocab(
     json_dicts = [
         {"entities": list(inv_vocab[ent_id]), "count": count_dict[ent_id]} for ent_id in range(current_new_id)
     ]
+
+    if min_num_languages is not None:
+        json_dicts = [d for d in json_dicts if len(d["entities"]) >= min_num_languages]
+
     json_dicts.sort(key=lambda x: -x["count"] if x["count"] != 0 else -math.inf)
-    json_dicts = json_dicts[:vocab_size]
+    if vocab_size is not None:
+        json_dicts = json_dicts[:vocab_size]
 
     with open(out_file, "w") as f:
         for ent_id, item in enumerate(json_dicts):
