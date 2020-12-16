@@ -176,7 +176,7 @@ class EntityVocab(object):
 @click.command()
 @click.option("--entity-vocab-files", "-v", multiple=True)
 @click.option("--inter-wiki-db-path", "-i", type=click.Path())
-@click.option("--out-file", type=click.Path())
+@click.option("--out-file", "-o", type=click.Path())
 @click.option("--vocab-size", type=int)
 @click.option("--min-num-languages", type=int)
 def build_multilingual_entity_vocab(
