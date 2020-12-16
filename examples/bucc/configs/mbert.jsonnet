@@ -1,8 +1,7 @@
 local model_size = std.parseInt(std.extVar("model_size"));
-local pretrained_file = std.extVar("PRETRAINED_PATH");
 local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
 
-local model_name = "bert-base-multilingual-cased";
+local model_name = "xlm-roberta-base";
 {
     "dataset_reader": {
        "type": "bucc",

@@ -1,7 +1,7 @@
 local model_size = std.parseInt(std.extVar("model_size"));
 local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
 
-local model_name = "pvl/labse_bert";
+local model_name = "bert-base-multilingual-cased";
 {
     "dataset_reader": {
        "type": "bucc",
