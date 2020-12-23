@@ -463,14 +463,19 @@ def run_pretraining(args):
                     epoch = int(global_step / num_train_steps_per_epoch)
                     save_model(model, f"epoch{epoch}")
                     if validation_evaluators is not None:
-                        model.eval()
                         logger.info("Running validation...")
+                        # Validation is done by single GPU
+                        if args.parallel:
+                            validation_model = model.module
+                        else:
+                            validation_model = model
+                        validation_model.eval()
                         with torch.no_grad():
                             validation_metrics = {k: evaluator(model) for k, evaluator in validation_evaluators.items()}
                         for (name, value) in validation_metrics.items():
                             logger.info(f"{name}: {value}")
                             summary_writer.add_scalar(name, value, global_step)
-                        model.train()
+                        validation_model.train()
 
                 if args.save_interval_sec and time.time() - prev_save_time > args.save_interval_sec:
                     save_model(model, f"step{global_step:07}")
