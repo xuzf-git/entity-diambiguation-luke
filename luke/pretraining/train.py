@@ -465,7 +465,8 @@ def run_pretraining(args):
                     if validation_evaluators is not None:
                         model.eval()
                         logger.info("Running validation...")
-                        validation_metrics = {k: evaluator(model) for k, evaluator in validation_evaluators.items()}
+                        with torch.no_grad():
+                            validation_metrics = {k: evaluator(model) for k, evaluator in validation_evaluators.items()}
                         for (name, value) in validation_metrics.items():
                             logger.info(f"{name}: {value}")
                             summary_writer.add_scalar(name, value, global_step)

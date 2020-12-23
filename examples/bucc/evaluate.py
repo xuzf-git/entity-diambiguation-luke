@@ -30,7 +30,7 @@ def extract_sentence_embeddings(data_loader, model, device: torch.device, debug:
         if debug:
             sentence_embeddings.append(torch.rand(len(batch), 1))
         else:
-            output_embeddings = model(**batch)
+            output_embeddings = model(**batch).detach()
             sentence_embeddings.append(output_embeddings)
     sentence_embeddings = torch.cat(sentence_embeddings, dim=0)
     return sentence_embeddings, indices
@@ -125,7 +125,6 @@ def evaluate_bucc(
     logger.info("retrieve_all_metrics")
     logger.info(retrieve_all_metrics)
 
-    # find best threshold
     if output_file is not None:
         prediction_dict_list = [
             {"source": src, "target": tgt, "score": score} for (src, tgt), score in zip(prediction, max_scores)
