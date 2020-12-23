@@ -21,12 +21,17 @@ class LukeSentenceEmbedding(nn.Module):
 
     def forward(self, tokens: TextFieldTensors):
         input_dict = tokens["tokens"]
-        word_sequence_output = super(type(self.luke_model), self.luke_model).forward(
-            word_ids=input_dict["token_ids"],
-            word_segment_ids=input_dict["type_ids"],
-            word_attention_mask=input_dict["mask"],
-        )[0]
-        return word_sequence_output[:, 0]  # return the [CLS] token
+
+        embedding_output = self.luke_model.embeddings(input_dict["token_ids"], input_dict["type_ids"])
+
+        attention_mask = self.luke_model._compute_extended_attention_mask(
+            input_dict["mask"], entity_attention_mask=None
+        )
+        encoder_outputs = self.luke_model.encoder(
+            embedding_output, attention_mask, [None] * self.luke_model.config.num_hidden_layers
+        )
+        sequence_output = encoder_outputs[0]
+        return sequence_output[:, 0]
 
 
 @ValidationEvaluator.register("bucc")
