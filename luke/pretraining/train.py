@@ -81,6 +81,7 @@ logger = logging.getLogger(__name__)
 @click.option("--amp-file", type=click.Path(exists=True), default=None)
 @click.option("--save-interval-sec", default=None, type=int)
 @click.option("--save-interval-steps", default=None, type=int)
+@click.option("--not-save-model", is_flag=True)
 def pretrain(**kwargs):
     run_pretraining(Namespace(**kwargs))
 
@@ -454,6 +455,27 @@ def run_pretraining(args):
             global_step += 1
 
             if args.local_rank == -1 or worker_index == 0:
+
+                if global_step % num_train_steps_per_epoch == 0 and validation_evaluators is not None:
+                    logger.info("Running validation...")
+                    # Validation is done by single GPU
+                    if args.parallel:
+                        validation_model = model.module
+                    else:
+                        validation_model = model
+                    validation_model.eval()
+                    with torch.no_grad():
+                        validation_metrics = {
+                            k: evaluator(validation_model) for k, evaluator in validation_evaluators.items()
+                        }
+                    for (name, value) in validation_metrics.items():
+                        logger.info(f"{name}: {value}")
+                        summary_writer.add_scalar(name, value, global_step)
+                    validation_model.train()
+
+                if args.not_save_model:
+                    continue
+
                 if global_step == num_train_steps:
                     # save the final model
                     save_model(model, f"epoch{args.num_epochs}")
@@ -462,20 +484,6 @@ def run_pretraining(args):
                     # save the model at each epoch
                     epoch = int(global_step / num_train_steps_per_epoch)
                     save_model(model, f"epoch{epoch}")
-                    if validation_evaluators is not None:
-                        logger.info("Running validation...")
-                        # Validation is done by single GPU
-                        if args.parallel:
-                            validation_model = model.module
-                        else:
-                            validation_model = model
-                        validation_model.eval()
-                        with torch.no_grad():
-                            validation_metrics = {k: evaluator(validation_model) for k, evaluator in validation_evaluators.items()}
-                        for (name, value) in validation_metrics.items():
-                            logger.info(f"{name}: {value}")
-                            summary_writer.add_scalar(name, value, global_step)
-                        validation_model.train()
 
                 if args.save_interval_sec and time.time() - prev_save_time > args.save_interval_sec:
                     save_model(model, f"step{global_step:07}")
