@@ -13,12 +13,6 @@ class BoeEncoder(Seq2VecEncoder):
         self.embedder = embedder
         self.averaged = averaged
 
-    def get_input_dim(self):
-        return self.embedding_dim
-
-    def get_output_dim(self):
-        return self.embedding_dim
-
     def forward(self, tokens: TextFieldTensors) -> torch.Tensor:
         embeddings = self.embedder(tokens)
         mask = util.get_text_field_mask(tokens)
