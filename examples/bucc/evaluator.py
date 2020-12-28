@@ -12,6 +12,7 @@ from examples.bucc.evaluate import extract_sentence_embeddings
 from examples.utils.retrieval.scoring_functions import ScoringFunction
 from examples.utils.retrieval.retrievers import Retriever
 from examples.utils.retrieval.metrics import compute_f1_score
+from examples.utils.retrieval.models.bag_of_embeddings import masked_mean_pooling
 
 
 class LukeSentenceEmbedding(nn.Module):
@@ -30,8 +31,10 @@ class LukeSentenceEmbedding(nn.Module):
         encoder_outputs = self.luke_model.encoder(
             embedding_output, attention_mask, [None] * self.luke_model.config.num_hidden_layers
         )
+
         sequence_output = encoder_outputs[0]
-        return sequence_output[:, 0]
+
+        return masked_mean_pooling(sequence_output, input_dict["mask"])
 
 
 @ValidationEvaluator.register("bucc")

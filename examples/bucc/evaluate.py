@@ -1,5 +1,4 @@
 import click
-import _jsonnet
 import json
 import torch
 import tqdm
