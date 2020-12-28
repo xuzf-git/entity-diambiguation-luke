@@ -7,6 +7,7 @@ import multiprocessing
 from collections import Counter, OrderedDict, defaultdict, namedtuple
 from contextlib import closing
 from multiprocessing.pool import Pool
+import logging
 
 import click
 from tqdm import tqdm
@@ -23,6 +24,8 @@ SPECIAL_TOKENS = {PAD_TOKEN, UNK_TOKEN, MASK_TOKEN}
 Entity = namedtuple("Entity", ["title", "language"])
 
 _dump_db = None  # global variable used in multiprocessing workers
+
+logger = logging.getLogger(__name__)
 
 
 @click.command()
@@ -201,8 +204,9 @@ def build_multilingual_entity_vocab(
     current_new_id = len(special_token_to_idx)
 
     for entity_vocab_path in entity_vocab_files:
+        logger.info(f"Reading {entity_vocab_path}")
         with open(entity_vocab_path, "r") as f:
-            for line in f:
+            for line in tqdm(f):
                 entity_dict = json.loads(line)
                 for title, lang in entity_dict["entities"]:
                     entity = Entity(title, lang)
@@ -228,6 +232,8 @@ def build_multilingual_entity_vocab(
         {"entities": list(inv_vocab[ent_id]), "count": count_dict[ent_id]} for ent_id in range(current_new_id)
     ]
 
+    logger.info(f"Vocab size without truncation: {len(json_dicts)}")
+
     if min_num_languages is not None:
         json_dicts = [d for d in json_dicts if len(d["entities"]) >= min_num_languages]
 
@@ -235,6 +241,8 @@ def build_multilingual_entity_vocab(
     if vocab_size is not None:
         json_dicts = json_dicts[:vocab_size]
 
+    logger.info(f"Final vocab size: {len(json_dicts)}")
+    logger.info(f"Saving to {out_file}")
     with open(out_file, "w") as f:
         for ent_id, item in enumerate(json_dicts):
             json.dump({"id": ent_id, **item}, f)
