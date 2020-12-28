@@ -197,8 +197,9 @@ def build_multilingual_entity_vocab(
     db = InterwikiDB.load(inter_wiki_db_path)
 
     vocab: Dict[Entity, int] = {}  # title -> index
-    inv_vocab = defaultdict(set)  # index -> Set[title]
-    count_dict = defaultdict(int)  # index -> count
+    inv_vocab = defaultdict(set)  # ent_id -> Set[title]
+    count_dict = defaultdict(int)  # ent_id -> count
+    index_mapping = {}  # inter-language index -> ent_id
 
     special_token_to_idx = {special_token: idx for idx, special_token in enumerate(SPECIAL_TOKENS)}
     current_new_id = len(special_token_to_idx)
@@ -210,18 +211,19 @@ def build_multilingual_entity_vocab(
                 entity_dict = json.loads(line)
                 for title, lang in entity_dict["entities"]:
                     entity = Entity(title, lang)
-                    multilingual_entities = {entity}
                     if title not in SPECIAL_TOKENS:
-                        aligned_entities = {Entity(t, ln) for t, ln in db.query(title, lang)}
-                        multilingual_entities.update(aligned_entities)
+                        try:
+                            inter_language_id = db.get_id(title, lang)
+                        except KeyError:
+                            inter_language_id = None
+
                         # judge if we should assign a new id to these entities
-                        already_registered_entities = aligned_entities & vocab.keys()
-                        if len(already_registered_entities) > 0:
-                            already_registered_entity = list(already_registered_entities)[0]
-                            ent_id = vocab[already_registered_entity]
+                        if inter_language_id is not None and inter_language_id in index_mapping:
+                            ent_id = vocab[index_mapping[inter_language_id]]
                         else:
                             ent_id = current_new_id
                             current_new_id += 1
+                            index_mapping[inter_language_id] = ent_id
                     else:
                         ent_id = special_token_to_idx[title]
 
