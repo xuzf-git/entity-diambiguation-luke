@@ -219,7 +219,7 @@ def build_multilingual_entity_vocab(
 
                         # judge if we should assign a new id to these entities
                         if inter_language_id is not None and inter_language_id in index_mapping:
-                            ent_id = vocab[index_mapping[inter_language_id]]
+                            ent_id = index_mapping[inter_language_id]
                         else:
                             ent_id = current_new_id
                             current_new_id += 1
