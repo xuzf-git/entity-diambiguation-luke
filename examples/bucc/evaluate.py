@@ -21,7 +21,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s - %(name)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
-def extract_sentence_embeddings(data_loader, model, device: torch.device, debug: bool=False):
+def extract_sentence_embeddings(data_loader, model, device: torch.device, debug: bool = False):
     sentence_embeddings = []
     indices = []
     for batch in tqdm.tqdm(data_loader):
@@ -46,6 +46,7 @@ def extract_sentence_embeddings(data_loader, model, device: torch.device, debug:
 @click.option("--retriever", default="margin")
 @click.option("--cuda-device", default=-1)
 @click.option("--debug", is_flag=True)
+@click.option("--overrides", type=str, default=None)
 @torch.no_grad()
 def evaluate_bucc(
     config_path: str,
@@ -57,9 +58,10 @@ def evaluate_bucc(
     retriever: str,
     cuda_device: int,
     debug: bool,
+    overrides: str,
 ):
 
-    config_params = Params(json.loads(_jsonnet.evaluate_file(config_path, ext_vars=_environment_variables())))
+    config_params = Params.from_file(config_path, ext_vars=_environment_variables(), params_overrides=overrides)
     import_module_and_submodules("examples")
 
     if "dataset_reader" in config_params:
