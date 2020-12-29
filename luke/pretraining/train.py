@@ -1,6 +1,7 @@
 import contextlib
 import datetime
 import json
+import _jsonnet
 import logging
 import math
 import os
@@ -60,6 +61,7 @@ logger = logging.getLogger(__name__)
 @click.option("--fix-bert-weights", is_flag=True)
 @click.option("--grad-avg-on-cpu/--grad-avg-on-gpu", default=False)
 @click.option("--num-epochs", default=20)
+@click.option("--num-train-steps-per-epoch", default=0)
 @click.option("--global-step", default=0)
 @click.option("--fp16", is_flag=True)
 @click.option("--fp16-opt-level", default="O2", type=click.Choice(["O1", "O2"]))
@@ -73,11 +75,13 @@ logger = logging.getLogger(__name__)
 @click.option("--master-port", default="29502")
 @click.option("--log-dir", type=click.Path(), default=None)
 @click.option("--model-file", type=click.Path(exists=True), default=None)
+@click.option("--validation-config-file", type=click.Path(exists=True), default=None)
 @click.option("--optimizer-file", type=click.Path(exists=True), default=None)
 @click.option("--scheduler-file", type=click.Path(exists=True), default=None)
 @click.option("--amp-file", type=click.Path(exists=True), default=None)
 @click.option("--save-interval-sec", default=None, type=int)
 @click.option("--save-interval-steps", default=None, type=int)
+@click.option("--not-save-model", is_flag=True)
 def pretrain(**kwargs):
     run_pretraining(Namespace(**kwargs))
 
@@ -176,7 +180,7 @@ def run_pretraining(args):
     bert_config = AutoConfig.from_pretrained(args.bert_model_name)
 
     dataset_size = sum([len(d) for d in dataset_list])
-    num_train_steps_per_epoch = math.ceil(dataset_size / args.batch_size)
+    num_train_steps_per_epoch = args.num_train_steps_per_epoch or math.ceil(dataset_size / args.batch_size)
     num_train_steps = math.ceil(dataset_size / args.batch_size * args.num_epochs)
     train_batch_size = int(args.batch_size / args.gradient_accumulation_steps / num_workers)
 
@@ -301,6 +305,21 @@ def run_pretraining(args):
             broadcast_buffers=False,
             find_unused_parameters=True,
         )
+
+    if args.validation_config_file is not None:
+        from .validation_evaluator import ValidationEvaluator
+        from allennlp.common.params import Params, _environment_variables
+        from allennlp.common.util import import_module_and_submodules
+
+        import_module_and_submodules("luke")
+        import_module_and_submodules("examples")
+
+        validation_params = json.loads(
+            _jsonnet.evaluate_file(args.validation_config_file, ext_vars=_environment_variables())
+        )
+        validation_evaluators = {k: ValidationEvaluator.from_params(Params(v)) for k, v in validation_params.items()}
+    else:
+        validation_evaluators = None
 
     model.train()
 
@@ -436,6 +455,27 @@ def run_pretraining(args):
             global_step += 1
 
             if args.local_rank == -1 or worker_index == 0:
+
+                if global_step % num_train_steps_per_epoch == 0 and validation_evaluators is not None:
+                    logger.info("Running validation...")
+                    # Validation is done by single GPU
+                    if args.parallel:
+                        validation_model = model.module
+                    else:
+                        validation_model = model
+                    validation_model.eval()
+                    with torch.no_grad():
+                        validation_metrics = {
+                            k: evaluator(validation_model) for k, evaluator in validation_evaluators.items()
+                        }
+                    for (name, value) in validation_metrics.items():
+                        logger.info(f"{name}: {value}")
+                        summary_writer.add_scalar(name, value, global_step)
+                    validation_model.train()
+
+                if args.not_save_model:
+                    continue
+
                 if global_step == num_train_steps:
                     # save the final model
                     save_model(model, f"epoch{args.num_epochs}")
@@ -444,6 +484,7 @@ def run_pretraining(args):
                     # save the model at each epoch
                     epoch = int(global_step / num_train_steps_per_epoch)
                     save_model(model, f"epoch{epoch}")
+
                 if args.save_interval_sec and time.time() - prev_save_time > args.save_interval_sec:
                     save_model(model, f"step{global_step:07}")
                     prev_save_time = time.time()

@@ -18,9 +18,11 @@ tqdm = "*"
 ujson = "*"
 wikipedia2vec = "*"
 comet-ml = { version = "*", optional = true }
-seqeval = { version = "*", optional = true }
 pyjnius = {version = "*", optional = true}
-pyicu = {version = "*", optional = true}
+allennlp = "^1.2.2"
+jsonnet = "0.16.0"
+PyICU = "^2.6"
+seqeval = "^1.2.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

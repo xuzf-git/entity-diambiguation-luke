@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from luke.model import BertLayerNorm, LukeModel
+from luke.model import LukeModel
 from luke.pretraining.model import EntityPredictionHead
 
 
@@ -16,7 +16,7 @@ class EntityEmbeddings(nn.Module):
         self.token_type_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
         self.mask_embedding = nn.Parameter(torch.zeros(1, config.hidden_size))
 
-        self.LayerNorm = BertLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, entity_ids, position_ids, token_type_ids):
