@@ -1,4 +1,4 @@
-from typing import List, Iterator, Union
+from typing import List, Iterator
 import functools
 import logging
 import multiprocessing
