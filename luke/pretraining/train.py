@@ -1,4 +1,3 @@
-from typing import List
 import contextlib
 import datetime
 import json
@@ -171,6 +170,7 @@ def run_pretraining(args):
         "Starting pretraining with the following arguments: %s", json.dumps(vars(args), indent=2, sort_keys=True)
     )
 
+    logger.info("Preparing datasets...")
     datasets = [WikipediaPretrainingDataset(d) for d in args.dataset_dir.split(",")]
     # Check if the attributes are all the same
     # Note that these two checks are not strict, only compare the length of the object
@@ -186,10 +186,12 @@ def run_pretraining(args):
     bert_config = AutoConfig.from_pretrained(args.bert_model_name)
 
     dataset_size = sum([len(d) for d in datasets])
+    logger.info(f"Total dataset size: {dataset_size}")
     num_train_steps_per_epoch = args.num_train_steps_per_epoch or math.ceil(dataset_size / args.batch_size)
     num_train_steps = math.ceil(dataset_size / args.batch_size * args.num_epochs)
     train_batch_size = int(args.batch_size / args.gradient_accumulation_steps / num_workers)
 
+    logger.info("Preparing model...")
     entity_vocab = representative_dataset.entity_vocab
     config = LukeConfig(
         entity_vocab_size=entity_vocab.size,
@@ -198,27 +200,9 @@ def run_pretraining(args):
         **bert_config.to_dict(),
     )
     model = LukePretrainingModel(config)
+    logger.info("Model configuration: %s", config)
 
     global_step = args.global_step
-
-    batch_generator_args = dict(
-        batch_size=train_batch_size,
-        masked_lm_prob=args.masked_lm_prob,
-        masked_entity_prob=args.masked_entity_prob,
-        whole_word_masking=args.whole_word_masking,
-        unmasked_word_prob=args.unmasked_word_prob,
-        random_word_prob=args.random_word_prob,
-        unmasked_entity_prob=args.unmasked_entity_prob,
-        random_entity_prob=args.random_entity_prob,
-        mask_words_in_entity_span=args.mask_words_in_entity_span,
-        num_workers=num_workers,
-        worker_index=worker_index,
-        skip=global_step * args.batch_size,
-    )
-
-    batch_generator = LukePretrainingBatchGenerator(datasets, **batch_generator_args)
-
-    logger.info("Model configuration: %s", config)
 
     if args.fix_bert_weights:
         for param in model.parameters():
@@ -230,6 +214,7 @@ def run_pretraining(args):
 
     model.to(device)
 
+    logger.info("Preparing optimizer...")
     param_optimizer = list(model.named_parameters())
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_parameters = [
@@ -249,6 +234,7 @@ def run_pretraining(args):
     )
 
     if args.fp16:
+        logger.info("Apply fp16 training")
         from apex import amp
 
         if args.fp16_opt_level == "O2":
@@ -270,11 +256,13 @@ def run_pretraining(args):
             )
 
     if args.model_file is None:
+        logger.info(f"Initializing model weight from pretrained {args.bert_model_name}...")
         bert_model = AutoModelForPreTraining.from_pretrained(args.bert_model_name)
         bert_state_dict = bert_model.state_dict()
         model.load_bert_weights(bert_state_dict)
 
     else:
+        logger.info(f"Initializing model weight from the model file {args.model_file}...")
         model_state_dict = torch.load(args.model_file, map_location="cpu")
         model.load_state_dict(model_state_dict, strict=False)
 
@@ -322,6 +310,7 @@ def run_pretraining(args):
 
     model.train()
 
+    logger.info(f"Creating the output directory {args.output_dir}...")
     if args.local_rank == -1 or worker_index == 0:
         entity_vocab.save(os.path.join(args.output_dir, ENTITY_VOCAB_FILE))
         metadata = dict(
@@ -358,13 +347,28 @@ def run_pretraining(args):
         summary_writer = SummaryWriter(args.log_dir)
         pbar = tqdm(total=num_train_steps, initial=global_step)
 
+    batch_generator = LukePretrainingBatchGenerator(
+        datasets,
+        batch_size=train_batch_size,
+        masked_lm_prob=args.masked_lm_prob,
+        masked_entity_prob=args.masked_entity_prob,
+        whole_word_masking=args.whole_word_masking,
+        unmasked_word_prob=args.unmasked_word_prob,
+        random_word_prob=args.random_word_prob,
+        unmasked_entity_prob=args.unmasked_entity_prob,
+        random_entity_prob=args.random_entity_prob,
+        mask_words_in_entity_span=args.mask_words_in_entity_span,
+        num_workers=num_workers,
+        worker_index=worker_index,
+        skip=global_step * args.batch_size,
+    )
+
     tr_loss = 0
     accumulation_count = 0
     results = []
     prev_error = False
     prev_step_time = time.time()
     prev_save_time = time.time()
-
     for batch in batch_generator.generate_batches():
         try:
             batch = {k: torch.from_numpy(v).to(device) for k, v in batch.items()}
@@ -521,4 +525,3 @@ def run_parallel_pretraining(args):
     except KeyboardInterrupt:
         for process in processes:
             process.terminate()
-
