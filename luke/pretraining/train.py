@@ -1,3 +1,4 @@
+from typing import List
 import contextlib
 import datetime
 import json
@@ -170,17 +171,26 @@ def run_pretraining(args):
         "Starting pretraining with the following arguments: %s", json.dumps(vars(args), indent=2, sort_keys=True)
     )
 
-    dataset_dir_list = args.dataset_dir.split(",")
-    dataset_list = [WikipediaPretrainingDataset(d) for d in dataset_dir_list]
+    datasets = [WikipediaPretrainingDataset(d) for d in args.dataset_dir.split(",")]
+    # Check if the attributes are all the same
+    # Note that these two checks are not strict, only compare the length of the object
+    assert len(set([len(d.tokenizer) for d in datasets])) == 1
+    assert len(set([len(d.entity_vocab) for d in datasets])) == 1
+
+    assert len(set([d.max_seq_length for d in datasets])) == 1
+    assert len(set([d.max_entity_length for d in datasets])) == 1
+    assert len(set([d.max_mention_length for d in datasets])) == 1
+
+    representative_dataset = datasets[0]
 
     bert_config = AutoConfig.from_pretrained(args.bert_model_name)
 
-    dataset_size = sum([len(d) for d in dataset_list])
+    dataset_size = sum([len(d) for d in datasets])
     num_train_steps_per_epoch = args.num_train_steps_per_epoch or math.ceil(dataset_size / args.batch_size)
     num_train_steps = math.ceil(dataset_size / args.batch_size * args.num_epochs)
     train_batch_size = int(args.batch_size / args.gradient_accumulation_steps / num_workers)
 
-    entity_vocab = dataset_list[0].entity_vocab
+    entity_vocab = representative_dataset.entity_vocab
     config = LukeConfig(
         entity_vocab_size=entity_vocab.size,
         bert_model_name=args.bert_model_name,
@@ -206,7 +216,7 @@ def run_pretraining(args):
         skip=global_step * args.batch_size,
     )
 
-    batch_generator = LukePretrainingBatchGenerator(dataset_dir_list, **batch_generator_args)
+    batch_generator = LukePretrainingBatchGenerator(datasets, **batch_generator_args)
 
     logger.info("Model configuration: %s", config)
 
@@ -316,9 +326,9 @@ def run_pretraining(args):
         entity_vocab.save(os.path.join(args.output_dir, ENTITY_VOCAB_FILE))
         metadata = dict(
             model_config=config.to_dict(),
-            max_seq_length=dataset_list[0].max_seq_length,
-            max_entity_length=dataset_list[0].max_entity_length,
-            max_mention_length=dataset_list[0].max_mention_length,
+            max_seq_length=representative_dataset.max_seq_length,
+            max_entity_length=representative_dataset.max_entity_length,
+            max_mention_length=representative_dataset.max_mention_length,
             arguments=vars(args),
         )
         with open(os.path.join(args.output_dir, "metadata.json"), "w") as metadata_file:
@@ -511,3 +521,4 @@ def run_parallel_pretraining(args):
     except KeyboardInterrupt:
         for process in processes:
             process.terminate()
+

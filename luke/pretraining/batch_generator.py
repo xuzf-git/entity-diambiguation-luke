@@ -22,7 +22,7 @@ class LukePretrainingBatchGenerator(object):
 
     def __init__(
         self,
-        dataset_dir: Union[str, List[str]],
+        datasets: List[WikipediaPretrainingDataset],
         batch_size: int,
         masked_lm_prob: float,
         masked_entity_prob: float,
@@ -35,12 +35,9 @@ class LukePretrainingBatchGenerator(object):
         **dataset_kwargs
     ):
 
-        if isinstance(dataset_dir, str):
-            dataset_dir = [dataset_dir]
-
         self._worker_func = functools.partial(
             LukePretrainingBatchWorker,
-            dataset_dir=dataset_dir,
+            datasets=datasets,
             batch_size=batch_size,
             masked_lm_prob=masked_lm_prob,
             masked_entity_prob=masked_entity_prob,
@@ -76,7 +73,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
     def __init__(
         self,
         output_queue: multiprocessing.Queue,
-        dataset_dir: List[str],
+        datasets: List[WikipediaPretrainingDataset],
         batch_size: int,
         masked_lm_prob: float,
         masked_entity_prob: float,
@@ -91,7 +88,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         super(LukePretrainingBatchWorker, self).__init__()
 
         self._output_queue = output_queue
-        self._dataset_dir = dataset_dir
+        self._datasets = datasets
         self._batch_size = batch_size
         self._masked_lm_prob = masked_lm_prob
         self._masked_entity_prob = masked_entity_prob
@@ -106,35 +103,23 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         if "shuffle_buffer_size" not in self._dataset_kwargs:
             self._dataset_kwargs["shuffle_buffer_size"] = batch_size * 1000
 
-    def _check_datasets_are_compatible(self, pretraining_datasets: List[WikipediaPretrainingDataset]):
-        """Check if the attributes are all the same"""
-        # Note that these two checks are not strict, only compare the length of the object
-        assert len(set([len(d.tokenizer) for d in pretraining_datasets])) == 1
-        assert len(set([len(d.entity_vocab) for d in pretraining_datasets])) == 1
-
-        assert len(set([d.max_seq_length for d in pretraining_datasets])) == 1
-        assert len(set([d.max_entity_length for d in pretraining_datasets])) == 1
-        assert len(set([d.max_mention_length for d in pretraining_datasets])) == 1
-
     def run(self):
-        self._pretraining_datasets = [WikipediaPretrainingDataset(d) for d in self._dataset_dir]
-        self._check_datasets_are_compatible(self._pretraining_datasets)
-        dataset = self._pretraining_datasets[0]
+        representative_dataset = self._datasets[0]
 
-        self._tokenizer = dataset.tokenizer
-        self._entity_vocab = dataset.entity_vocab
-        self._max_seq_length = dataset.max_seq_length
-        self._max_entity_length = dataset.max_entity_length
-        self._max_mention_length = dataset.max_mention_length
+        self._tokenizer = representative_dataset.tokenizer
+        self._entity_vocab = representative_dataset.entity_vocab
+        self._max_seq_length = representative_dataset.max_seq_length
+        self._max_entity_length = representative_dataset.max_entity_length
+        self._max_mention_length = representative_dataset.max_mention_length
         self._cls_id = self._tokenizer.convert_tokens_to_ids(self._tokenizer.cls_token)
         self._sep_id = self._tokenizer.convert_tokens_to_ids(self._tokenizer.sep_token)
         self._mask_id = self._tokenizer.convert_tokens_to_ids(self._tokenizer.mask_token)
         self._pad_id = self._tokenizer.convert_tokens_to_ids(self._tokenizer.pad_token)
-        self._entity_mask_id = dataset.entity_vocab.get_id(MASK_TOKEN, dataset.language)
+        self._entity_mask_id = representative_dataset.entity_vocab.get_id(MASK_TOKEN, representative_dataset.language)
 
         iterator_sampler = IteratorSampler(
-            iterators=[d.create_iterator(**self._dataset_kwargs) for d in self._pretraining_datasets],
-            iterator_sizes=[len(d) for d in self._pretraining_datasets],
+            iterators=[d.create_iterator(**self._dataset_kwargs) for d in self._datasets],
+            iterator_sizes=[len(d) for d in self._datasets],
         )
 
         buf = []
