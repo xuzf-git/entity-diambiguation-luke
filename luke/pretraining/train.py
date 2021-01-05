@@ -23,7 +23,7 @@ from transformers import (
 
 from luke.model import LukeConfig
 from luke.optimization import LukeAdamW
-from luke.pretraining.batch_generator import LukePretrainingBatchGenerator, MultilingualBatchGenerator
+from luke.pretraining.batch_generator import LukePretrainingBatchGenerator
 from luke.pretraining.dataset import WikipediaPretrainingDataset
 from luke.pretraining.model import LukePretrainingModel
 from luke.utils.model_utils import ENTITY_VOCAB_FILE
@@ -175,6 +175,7 @@ def run_pretraining(args):
         dataset_dir_list = args.dataset_dir.split(",")
         dataset_list = [WikipediaPretrainingDataset(d) for d in dataset_dir_list]
     else:
+        dataset_dir_list = [args.dataset_dir]
         dataset_list = [WikipediaPretrainingDataset(args.dataset_dir)]
 
     bert_config = AutoConfig.from_pretrained(args.bert_model_name)
@@ -210,14 +211,7 @@ def run_pretraining(args):
         skip=global_step * args.batch_size,
     )
 
-    if args.multilingual:
-        data_size_list = [len(d) for d in dataset_list]
-        batch_generator = MultilingualBatchGenerator(
-            dataset_dir_list, data_size_list, args.sampling_smoothing, **batch_generator_args,
-        )
-
-    else:
-        batch_generator = LukePretrainingBatchGenerator(args.dataset_dir, **batch_generator_args)
+    batch_generator = LukePretrainingBatchGenerator(dataset_dir_list, **batch_generator_args)
 
     logger.info("Model configuration: %s", config)
 
