@@ -23,7 +23,7 @@ from transformers import (
 
 from luke.model import LukeConfig
 from luke.optimization import LukeAdamW
-from luke.pretraining.batch_generator import LukePretrainingBatchGenerator, MultilingualBatchGenerator
+from luke.pretraining.batch_generator import LukePretrainingBatchGenerator
 from luke.pretraining.dataset import WikipediaPretrainingDataset
 from luke.pretraining.model import LukePretrainingModel
 from luke.utils.model_utils import ENTITY_VOCAB_FILE
@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.argument("dataset_dir")
 @click.argument("output_dir", type=click.Path())
-@click.option("--multilingual", is_flag=True)
 @click.option("--sampling-smoothing", default=0.7)
 @click.option("--parallel", is_flag=True)
 @click.option("--cpu", is_flag=True)
@@ -171,20 +170,29 @@ def run_pretraining(args):
         "Starting pretraining with the following arguments: %s", json.dumps(vars(args), indent=2, sort_keys=True)
     )
 
-    if args.multilingual:
-        dataset_dir_list = args.dataset_dir.split(",")
-        dataset_list = [WikipediaPretrainingDataset(d) for d in dataset_dir_list]
-    else:
-        dataset_list = [WikipediaPretrainingDataset(args.dataset_dir)]
+    logger.info("Preparing datasets...")
+    datasets = [WikipediaPretrainingDataset(d) for d in args.dataset_dir.split(",")]
+    # Check if the attributes are all the same
+    # Note that these two checks are not strict, only compare the length of the object
+    assert len(set([len(d.tokenizer) for d in datasets])) == 1
+    assert len(set([len(d.entity_vocab) for d in datasets])) == 1
+
+    assert len(set([d.max_seq_length for d in datasets])) == 1
+    assert len(set([d.max_entity_length for d in datasets])) == 1
+    assert len(set([d.max_mention_length for d in datasets])) == 1
+
+    representative_dataset = datasets[0]
 
     bert_config = AutoConfig.from_pretrained(args.bert_model_name)
 
-    dataset_size = sum([len(d) for d in dataset_list])
+    dataset_size = sum([len(d) for d in datasets])
+    logger.info(f"Total dataset size: {dataset_size}")
     num_train_steps_per_epoch = args.num_train_steps_per_epoch or math.ceil(dataset_size / args.batch_size)
     num_train_steps = math.ceil(dataset_size / args.batch_size * args.num_epochs)
     train_batch_size = int(args.batch_size / args.gradient_accumulation_steps / num_workers)
 
-    entity_vocab = dataset_list[0].entity_vocab
+    logger.info("Preparing model...")
+    entity_vocab = representative_dataset.entity_vocab
     config = LukeConfig(
         entity_vocab_size=entity_vocab.size,
         bert_model_name=args.bert_model_name,
@@ -192,34 +200,9 @@ def run_pretraining(args):
         **bert_config.to_dict(),
     )
     model = LukePretrainingModel(config)
+    logger.info("Model configuration: %s", config)
 
     global_step = args.global_step
-
-    batch_generator_args = dict(
-        batch_size=train_batch_size,
-        masked_lm_prob=args.masked_lm_prob,
-        masked_entity_prob=args.masked_entity_prob,
-        whole_word_masking=args.whole_word_masking,
-        unmasked_word_prob=args.unmasked_word_prob,
-        random_word_prob=args.random_word_prob,
-        unmasked_entity_prob=args.unmasked_entity_prob,
-        random_entity_prob=args.random_entity_prob,
-        mask_words_in_entity_span=args.mask_words_in_entity_span,
-        num_workers=num_workers,
-        worker_index=worker_index,
-        skip=global_step * args.batch_size,
-    )
-
-    if args.multilingual:
-        data_size_list = [len(d) for d in dataset_list]
-        batch_generator = MultilingualBatchGenerator(
-            dataset_dir_list, data_size_list, args.sampling_smoothing, **batch_generator_args,
-        )
-
-    else:
-        batch_generator = LukePretrainingBatchGenerator(args.dataset_dir, **batch_generator_args)
-
-    logger.info("Model configuration: %s", config)
 
     if args.fix_bert_weights:
         for param in model.parameters():
@@ -231,6 +214,7 @@ def run_pretraining(args):
 
     model.to(device)
 
+    logger.info("Preparing optimizer...")
     param_optimizer = list(model.named_parameters())
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_parameters = [
@@ -250,6 +234,7 @@ def run_pretraining(args):
     )
 
     if args.fp16:
+        logger.info("Apply fp16 training")
         from apex import amp
 
         if args.fp16_opt_level == "O2":
@@ -271,11 +256,13 @@ def run_pretraining(args):
             )
 
     if args.model_file is None:
+        logger.info(f"Initializing model weight from pretrained {args.bert_model_name}...")
         bert_model = AutoModelForPreTraining.from_pretrained(args.bert_model_name)
         bert_state_dict = bert_model.state_dict()
         model.load_bert_weights(bert_state_dict)
 
     else:
+        logger.info(f"Initializing model weight from the model file {args.model_file}...")
         model_state_dict = torch.load(args.model_file, map_location="cpu")
         model.load_state_dict(model_state_dict, strict=False)
 
@@ -323,13 +310,14 @@ def run_pretraining(args):
 
     model.train()
 
+    logger.info(f"Creating the output directory {args.output_dir}...")
     if args.local_rank == -1 or worker_index == 0:
         entity_vocab.save(os.path.join(args.output_dir, ENTITY_VOCAB_FILE))
         metadata = dict(
             model_config=config.to_dict(),
-            max_seq_length=dataset_list[0].max_seq_length,
-            max_entity_length=dataset_list[0].max_entity_length,
-            max_mention_length=dataset_list[0].max_mention_length,
+            max_seq_length=representative_dataset.max_seq_length,
+            max_entity_length=representative_dataset.max_entity_length,
+            max_mention_length=representative_dataset.max_mention_length,
             arguments=vars(args),
         )
         with open(os.path.join(args.output_dir, "metadata.json"), "w") as metadata_file:
@@ -359,13 +347,28 @@ def run_pretraining(args):
         summary_writer = SummaryWriter(args.log_dir)
         pbar = tqdm(total=num_train_steps, initial=global_step)
 
+    batch_generator = LukePretrainingBatchGenerator(
+        datasets,
+        batch_size=train_batch_size,
+        masked_lm_prob=args.masked_lm_prob,
+        masked_entity_prob=args.masked_entity_prob,
+        whole_word_masking=args.whole_word_masking,
+        unmasked_word_prob=args.unmasked_word_prob,
+        random_word_prob=args.random_word_prob,
+        unmasked_entity_prob=args.unmasked_entity_prob,
+        random_entity_prob=args.random_entity_prob,
+        mask_words_in_entity_span=args.mask_words_in_entity_span,
+        num_workers=num_workers,
+        worker_index=worker_index,
+        skip=global_step * args.batch_size,
+    )
+
     tr_loss = 0
     accumulation_count = 0
     results = []
     prev_error = False
     prev_step_time = time.time()
     prev_save_time = time.time()
-
     for batch in batch_generator.generate_batches():
         try:
             batch = {k: torch.from_numpy(v).to(device) for k, v in batch.items()}
