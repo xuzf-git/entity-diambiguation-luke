@@ -61,7 +61,7 @@ def build_wikipedia_pretraining_dataset(
 
 class WikipediaPretrainingDataset(object):
     def __init__(self, dataset_dir: str):
-        self._dataset_dir = dataset_dir
+        self.dataset_dir = dataset_dir
         with open(os.path.join(dataset_dir, METADATA_FILE)) as metadata_file:
             self.metadata = json.load(metadata_file)
 
@@ -92,11 +92,11 @@ class WikipediaPretrainingDataset(object):
         else:
             import transformers as tokenizer_module
         tokenizer_class = getattr(tokenizer_module, tokenizer_class_name)
-        return tokenizer_class.from_pretrained(self._dataset_dir)
+        return tokenizer_class.from_pretrained(self.dataset_dir)
 
     @property
     def entity_vocab(self):
-        vocab_file_path = get_entity_vocab_file_path(self._dataset_dir)
+        vocab_file_path = get_entity_vocab_file_path(self.dataset_dir)
         return EntityVocab(vocab_file_path)
 
     def create_iterator(
@@ -115,7 +115,7 @@ class WikipediaPretrainingDataset(object):
             page_id=tf.io.FixedLenFeature([1], tf.int64),
         )
         dataset = tf.data.TFRecordDataset(
-            [os.path.join(self._dataset_dir, DATASET_FILE)],
+            [os.path.join(self.dataset_dir, DATASET_FILE)],
             compression_type="GZIP",
             num_parallel_reads=num_parallel_reads,
         )
