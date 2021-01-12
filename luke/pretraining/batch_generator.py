@@ -32,6 +32,7 @@ class LukePretrainingBatchGenerator(object):
         unmasked_entity_prob: float,
         random_entity_prob: float,
         mask_words_in_entity_span: bool,
+        starting_step: int,
         **dataset_kwargs
     ):
 
@@ -47,6 +48,7 @@ class LukePretrainingBatchGenerator(object):
             unmasked_entity_prob=unmasked_entity_prob,
             random_entity_prob=random_entity_prob,
             mask_words_in_entity_span=mask_words_in_entity_span,
+            starting_step=starting_step,
             **dataset_kwargs
         )
 
@@ -83,6 +85,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         unmasked_entity_prob: float,
         random_entity_prob: float,
         mask_words_in_entity_span: bool,
+        starting_step: int,
         **dataset_kwargs
     ):
         super(LukePretrainingBatchWorker, self).__init__()
@@ -98,6 +101,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._unmasked_entity_prob = unmasked_entity_prob
         self._random_entity_prob = random_entity_prob
         self._mask_words_in_entity_span = mask_words_in_entity_span
+        self._starting_step = starting_step
         self._dataset_kwargs = dataset_kwargs
 
         if "shuffle_buffer_size" not in self._dataset_kwargs:
@@ -125,7 +129,10 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         buf = []
         max_word_len = 1
         max_entity_len = 1
-        for item in iterator_sampler:
+        for i, item in enumerate(iterator_sampler):
+            if i < self._starting_step:
+                continue
+
             entity_feat, masked_entity_positions = self._create_entity_features(
                 item["entity_ids"], item["entity_position_ids"]
             )
@@ -280,6 +287,8 @@ class IteratorSampler:
         self.iterators = iterators
         self.num_iterators = len(iterators)
         self.sampling_rate = self.get_sampling_rate(iterator_sizes, smoothing_factor=smoothing_factor)
+
+        np.random.seed(0)
 
     def __iter__(self):
         """
