@@ -129,7 +129,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         buf = []
         max_word_len = 1
         max_entity_len = 1
-        for i, item in enumerate(dataset_sampler):
+        for item in dataset_sampler:
 
             entity_feat, masked_entity_positions = self._create_entity_features(
                 item["entity_ids"], item["entity_position_ids"]
