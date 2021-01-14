@@ -319,7 +319,7 @@ class DatasetSampler:
         stopped_datasets = set()
         while len(stopped_datasets) < self.num_datasets:
             sampled_dataset = self._sample_dataset()
-            if sampled_iterator in stopped_datasets:
+            if sampled_dataset in stopped_datasets:
                 continue
             sampled_iterator = self.iterators[sampled_dataset]
             try:
