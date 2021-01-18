@@ -123,10 +123,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._entity_mask_id = representative_dataset.entity_vocab.get_id(MASK_TOKEN, representative_dataset.language)
 
         dataset_sampler = DatasetSampler(
-            datasets=self._datasets,
-            dataset_kwargs=self._dataset_kwargs,
-            starting_step=self._starting_step,
-            random_seed=self._dataset_kwargs["worker_index"],
+            datasets=self._datasets, dataset_kwargs=self._dataset_kwargs, starting_step=self._starting_step,
         )
 
         buf = []
