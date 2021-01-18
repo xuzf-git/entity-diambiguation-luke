@@ -123,7 +123,10 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._entity_mask_id = representative_dataset.entity_vocab.get_id(MASK_TOKEN, representative_dataset.language)
 
         dataset_sampler = DatasetSampler(
-            datasets=self._datasets, dataset_kwargs=self._dataset_kwargs, starting_step=self._starting_step
+            datasets=self._datasets,
+            dataset_kwargs=self._dataset_kwargs,
+            starting_step=self._starting_step,
+            random_seed=self._dataset_kwargs["worker_index"],
         )
 
         buf = []
@@ -287,7 +290,9 @@ class DatasetSampler:
         dataset_kwargs: Dict,
         starting_step: int,
         smoothing_factor: float = 0.7,
+        random_seed: int = 0,
     ):
+        np.random.seed(random_seed)
         self.datasets = datasets
         self.datasets_dirs = [d.dataset_dir for d in datasets]
 
@@ -295,8 +300,6 @@ class DatasetSampler:
         self.num_datasets = len(datasets)
         self.sampling_rate = self.get_sampling_rate([len(d) for d in self.datasets], smoothing_factor=smoothing_factor)
         self.iterators = self._prepare_iterators(starting_step)
-
-        np.random.seed(0)
 
     def _prepare_iterators(self, starting_step: int):
         skip_counter = Counter()
