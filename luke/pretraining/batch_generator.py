@@ -296,13 +296,13 @@ class DatasetSampler:
         self._dataset_kwargs = dataset_kwargs
         self.num_datasets = len(datasets)
         self.sampling_rate = self.get_sampling_rate([len(d) for d in self.datasets], smoothing_factor=smoothing_factor)
-        self.iterators = self._prepare_iterators(starting_step)
+        self.iterators = self._prepare_iterators(starting_step, num_workers=dataset_kwargs["num_workers"])
 
-    def _prepare_iterators(self, starting_step: int):
+    def _prepare_iterators(self, starting_step: int, num_workers: int = 1):
         skip_counter = Counter()
-        for i in range(starting_step):
+        for i in range(starting_step // num_workers):
             d = self._sample_dataset()
-            skip_counter[d] += 1
+            skip_counter[d] += num_workers
 
         iterators = {
             d.dataset_dir: d.create_iterator(skip=skip_counter[d], **self._dataset_kwargs) for d in self.datasets
