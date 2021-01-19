@@ -293,7 +293,7 @@ def run_pretraining(args):
             find_unused_parameters=True,
         )
 
-    if args.validation_config_file is not None:
+    if args.validation_config_file is not None and (args.local_rank == -1 or worker_index == 0):
         from .validation_evaluator import ValidationEvaluator
         from allennlp.common.params import Params, _environment_variables
         from allennlp.common.util import import_module_and_submodules
