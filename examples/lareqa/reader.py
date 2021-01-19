@@ -1,7 +1,8 @@
 from typing import Dict, List, Tuple
 import json
+import itertools
 
-
+from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data import DatasetReader, Instance, Tokenizer, TokenIndexer
 from allennlp.data.fields import MetadataField, TextField
 
@@ -25,7 +26,12 @@ def parse_paragraph(paragraph: Dict):
     for q in paragraph["qas"]:
         for answer in q["answers"]:
             sentence_index = _get_sentence_index(paragraph["sentence_breaks"], answer["answer_start"])
-            yield {"question": q["question"], "answer": paragraph["sentences"][sentence_index], "idx": q["id"]}
+            yield {
+                "question": q["question"],
+                "answer": paragraph["sentences"][sentence_index],
+                "context_paragraph": paragraph["sentences"],
+                "idx": q["id"],
+            }
 
 
 @DatasetReader.register("lareqa")
@@ -35,12 +41,24 @@ class LAReQAReader(DatasetReader):
         self.tokenizer = tokenizer
         self.token_indexers = token_indexers
 
-    def text_to_instance(self, question: str, answer: str, idx: str) -> Instance:
+    def text_to_instance(self, question: str, answer: str, context_paragraph: List[str], idx: str) -> Instance:
         question_tokens = self.tokenizer.tokenize(question)
         answer_tokens = self.tokenizer.tokenize(answer)
+
+        context_tokens = [self.tokenizer.tokenize(s) for s in context_paragraph]
+        if isinstance(self.tokenizer, PretrainedTransformerTokenizer):
+            # drop the [CLS] and [SEP] token
+            context_tokens = [tokens[1:-1] for tokens in context_tokens]
+            # append [SEP] to last
+            context_tokens[-1].append(answer_tokens[-1])
+
+        context_tokens = list(itertools.chain(*context_tokens))
+        for token in context_tokens:
+            token.type_id = 1
+
         fields = {
             "question": TextField(question_tokens, self.token_indexers),
-            "answer": TextField(answer_tokens, self.token_indexers),
+            "answer": TextField(answer_tokens + context_tokens, self.token_indexers),
             "index": MetadataField(idx),
         }
         return Instance(fields)
