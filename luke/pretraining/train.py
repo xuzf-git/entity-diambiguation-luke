@@ -360,7 +360,7 @@ def run_pretraining(args):
         mask_words_in_entity_span=args.mask_words_in_entity_span,
         num_workers=num_workers,
         worker_index=worker_index,
-        skip=global_step * args.batch_size,
+        starting_step=int(global_step * args.batch_size),
     )
 
     tr_loss = 0

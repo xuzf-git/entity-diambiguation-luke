@@ -1,10 +1,11 @@
-from typing import List, Iterator
+from typing import List, Iterator, Dict
 import functools
 import logging
 import multiprocessing
 import queue
 import random
 import unicodedata
+from collections import Counter
 
 import numpy as np
 from transformers.tokenization_roberta import RobertaTokenizer
@@ -32,6 +33,7 @@ class LukePretrainingBatchGenerator(object):
         unmasked_entity_prob: float,
         random_entity_prob: float,
         mask_words_in_entity_span: bool,
+        starting_step: int,
         **dataset_kwargs
     ):
 
@@ -47,6 +49,7 @@ class LukePretrainingBatchGenerator(object):
             unmasked_entity_prob=unmasked_entity_prob,
             random_entity_prob=random_entity_prob,
             mask_words_in_entity_span=mask_words_in_entity_span,
+            starting_step=starting_step,
             **dataset_kwargs
         )
 
@@ -83,6 +86,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         unmasked_entity_prob: float,
         random_entity_prob: float,
         mask_words_in_entity_span: bool,
+        starting_step: int,
         **dataset_kwargs
     ):
         super(LukePretrainingBatchWorker, self).__init__()
@@ -98,6 +102,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._unmasked_entity_prob = unmasked_entity_prob
         self._random_entity_prob = random_entity_prob
         self._mask_words_in_entity_span = mask_words_in_entity_span
+        self._starting_step = starting_step
         self._dataset_kwargs = dataset_kwargs
 
         if "shuffle_buffer_size" not in self._dataset_kwargs:
@@ -117,15 +122,15 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._pad_id = self._tokenizer.convert_tokens_to_ids(self._tokenizer.pad_token)
         self._entity_mask_id = representative_dataset.entity_vocab.get_id(MASK_TOKEN, representative_dataset.language)
 
-        iterator_sampler = IteratorSampler(
-            iterators=[d.create_iterator(**self._dataset_kwargs) for d in self._datasets],
-            iterator_sizes=[len(d) for d in self._datasets],
+        dataset_sampler = DatasetSampler(
+            datasets=self._datasets, dataset_kwargs=self._dataset_kwargs, starting_step=self._starting_step,
         )
 
         buf = []
         max_word_len = 1
         max_entity_len = 1
-        for item in iterator_sampler:
+        for item in dataset_sampler:
+
             entity_feat, masked_entity_positions = self._create_entity_features(
                 item["entity_ids"], item["entity_position_ids"]
             )
@@ -275,25 +280,52 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         return False
 
 
-class IteratorSampler:
-    def __init__(self, iterators: List[Iterator], iterator_sizes: List[float], smoothing_factor: float = 0.7):
-        self.iterators = iterators
-        self.num_iterators = len(iterators)
-        self.sampling_rate = self.get_sampling_rate(iterator_sizes, smoothing_factor=smoothing_factor)
+class DatasetSampler:
+    def __init__(
+        self,
+        datasets: List[WikipediaPretrainingDataset],
+        dataset_kwargs: Dict,
+        starting_step: int,
+        smoothing_factor: float = 0.7,
+        random_seed: int = 0,
+    ):
+        np.random.seed(random_seed)
+        self.datasets = datasets
+        self.datasets_dirs = [d.dataset_dir for d in datasets]
+
+        self._dataset_kwargs = dataset_kwargs
+        self.num_datasets = len(datasets)
+        self.sampling_rate = self.get_sampling_rate([len(d) for d in self.datasets], smoothing_factor=smoothing_factor)
+        self.iterators = self._prepare_iterators(starting_step, num_workers=dataset_kwargs["num_workers"])
+
+    def _prepare_iterators(self, starting_step: int, num_workers: int = 1):
+        skip_counter = Counter()
+        for i in range(starting_step // num_workers):
+            d = self._sample_dataset()
+            skip_counter[d] += num_workers
+
+        iterators = {
+            d.dataset_dir: d.create_iterator(skip=skip_counter[d], **self._dataset_kwargs) for d in self.datasets
+        }
+        return iterators
+
+    def _sample_dataset(self):
+        return np.random.choice(self.datasets_dirs, p=self.sampling_rate)
 
     def __iter__(self):
         """
         Randomly choose an iterator according to ``sampling_rate``, and yield an element from it.
         """
-        stopped_iterators = set()
-        while len(stopped_iterators) < self.num_iterators:
-            sampled_iterator = np.random.choice(self.iterators, p=self.sampling_rate)
-            if sampled_iterator in stopped_iterators:
+        stopped_datasets = set()
+        while len(stopped_datasets) < self.num_datasets:
+            sampled_dataset = self._sample_dataset()
+            if sampled_dataset in stopped_datasets:
                 continue
+            sampled_iterator = self.iterators[sampled_dataset]
             try:
                 yield next(sampled_iterator)
             except StopIteration:
-                stopped_iterators.add(sampled_iterator)
+                stopped_datasets.add(sampled_dataset)
                 continue
 
     @staticmethod
