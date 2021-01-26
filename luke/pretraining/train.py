@@ -25,7 +25,7 @@ from luke.model import LukeConfig
 from luke.optimization import LukeAdamW
 from luke.pretraining.batch_generator import LukePretrainingBatchGenerator, MultitaskIterator
 from luke.pretraining.dataset import WikipediaPretrainingDataset
-from luke.pretraining.model import LukePretrainingModel
+from luke.pretraining.model import LukePretrainingModel, LukeEntityPredictionModel, share_modules
 from luke.utils.model_utils import ENTITY_VOCAB_FILE
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.argument("dataset_dir")
 @click.argument("output_dir", type=click.Path())
-@click.option("--entity-sentence-alignment-dataset", type=str)
+@click.option("--entity-prediction-dataset", type=str)
 @click.option("--sampling-smoothing", default=0.7)
 @click.option("--parallel", is_flag=True)
 @click.option("--cpu", is_flag=True)
@@ -362,15 +362,16 @@ def run_pretraining(args):
         num_workers=num_workers,
         worker_index=worker_index,
         starting_step=int(global_step * args.batch_size),
-        registered_entity_page_only=True
+        registered_entity_page_only=True,
     )
 
-    multitask_iterator = MultitaskIterator({"masked_lm": batch_generator.generate_batches()})
+    multitask_iterators = {"masked_lm": batch_generator.generate_batches()}
     multitask_models = {"masked_lm": model}
 
-    if args.entity_sentence_alignment_dataset:
-        alignment_datasets = [WikipediaPretrainingDataset(d) for d in args.entity_sentence_alignment_dataset.split(",")]
-        multitask_iterator["entity_sentence_alignment"] = LukePretrainingBatchGenerator(
+    if args.entity_prediction_dataset:
+        logger.info("Preparing for Entity-Sentence alignment task...")
+        alignment_datasets = [WikipediaPretrainingDataset(d) for d in args.entity_prediction_dataset.split(",")]
+        multitask_iterators["entity_prediction"] = LukePretrainingBatchGenerator(
             alignment_datasets,
             batch_size=train_batch_size,
             masked_lm_prob=0.0,
@@ -385,8 +386,14 @@ def run_pretraining(args):
             worker_index=worker_index,
             starting_step=int(global_step * args.batch_size),
             word_only=True,
-            registered_entity_page_only=True
-        )
+            registered_entity_page_only=True,
+        ).generate_batches()
+
+        alignment_model = LukeEntityPredictionModel(config)
+        alignment_model.train()
+        alignment_model.to(device)
+        share_modules(model, alignment_model)
+        multitask_models["entity_prediction"] = alignment_model
 
     tr_loss = 0
     accumulation_count = 0
@@ -394,7 +401,7 @@ def run_pretraining(args):
     prev_error = False
     prev_step_time = time.time()
     prev_save_time = time.time()
-    for task, batch in multitask_iterator:
+    for task, batch in MultitaskIterator(multitask_iterators):
         try:
             batch = {k: torch.from_numpy(v).to(device) for k, v in batch.items()}
             model = multitask_models[task]

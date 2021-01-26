@@ -5,6 +5,7 @@ from transformers.modeling_bert import ACT2FN, BertPreTrainingHeads
 from transformers.modeling_roberta import RobertaLMHead
 
 from luke.model import LukeModel, LukeConfig
+from examples.utils.retrieval.embedding_similarity_loss import InBatchSoftmax
 
 
 class EntityPredictionHeadTransform(nn.Module):
@@ -126,3 +127,50 @@ class LukePretrainingModel(LukeModel):
                 ret["masked_lm_total"] = word_ids.new_tensor(0, dtype=torch.long)
 
         return ret
+
+
+class LukeEntityPredictionModel(LukeModel):
+    def __init__(self, config: LukeConfig):
+        super().__init__(config)
+
+        if self.config.bert_model_name and "roberta" in self.config.bert_model_name:
+            self.lm_head = RobertaLMHead(config)
+            self.lm_head.decoder.weight = self.embeddings.word_embeddings.weight
+        else:
+            self.cls = BertPreTrainingHeads(config)
+            self.cls.predictions.decoder.weight = self.embeddings.word_embeddings.weight
+
+        self.entity_predictions = EntityPredictionHead(config)
+        self.entity_predictions.decoder.weight = self.entity_embeddings.entity_embeddings.weight
+
+        self.embedding_similarity_loss = InBatchSoftmax()
+
+        self.loss_func = nn.CrossEntropyLoss(ignore_index=-1)
+
+        self.apply(self.init_weights)
+
+    def forward(
+        self,
+        word_ids: torch.LongTensor,
+        word_segment_ids: torch.LongTensor,
+        word_attention_mask: torch.LongTensor,
+        page_id: torch.LongTensor,
+        **kwargs
+    ):
+
+        output = super().forward(word_ids, word_segment_ids, word_attention_mask,)
+        word_sequence_output = output[0]
+
+        cls_token_embeddings = word_sequence_output[:, 0]
+
+        entity_scores = self.entity_predictions(cls_token_embeddings)
+        ret = {}
+        ret["loss"] = self.loss_func(entity_scores, page_id)
+
+        return ret
+
+
+def share_modules(model1: LukeModel, model2: LukeModel):
+    for key, module in model1.named_children():
+        if hasattr(model2, key):
+            setattr(model2, key, module)

@@ -139,6 +139,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         class BufferItem(NamedTuple):
             word_features: Dict[str, np.ndarray]
             entity_features: Dict[str, np.ndarray]
+            page_id: int
 
         max_word_len = 1
         max_entity_len = 1
@@ -159,12 +160,14 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
             word_feat = self._create_word_features(item["word_ids"], masked_entity_positions)
             max_word_len = max(max_word_len, item["word_ids"].size + 2)  # 2 for [CLS] and [SEP]
 
-            buf.append(BufferItem(word_feat, entity_feat))
+            buf.append(BufferItem(word_feat, entity_feat, item["page_id"]))
 
             if len(buf) == self._batch_size:
                 batch = {}
                 word_keys = buf[0].word_features.keys()
                 batch.update({k: np.stack([o.word_features[k][:max_word_len] for o in buf]) for k in word_keys})
+                batch.update({"page_id": np.array([o.page_id for o in buf], dtype=np.int)})
+
                 if not self._word_only:
                     entity_keys = buf[0].entity_features.keys()
                     batch.update(
