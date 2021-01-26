@@ -137,13 +137,6 @@ class LukeEntityPredictionModel(LukeModel):
     def __init__(self, config: LukeConfig):
         super().__init__(config)
 
-        if self.config.bert_model_name and "roberta" in self.config.bert_model_name:
-            self.lm_head = RobertaLMHead(config)
-            self.lm_head.decoder.weight = self.embeddings.word_embeddings.weight
-        else:
-            self.cls = BertPreTrainingHeads(config)
-            self.cls.predictions.decoder.weight = self.embeddings.word_embeddings.weight
-
         self.entity_predictions = EntityPredictionHead(config)
         self.entity_predictions.decoder.weight = self.entity_embeddings.entity_embeddings.weight
 
