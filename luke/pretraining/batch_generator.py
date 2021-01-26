@@ -1,4 +1,4 @@
-from typing import List, Iterator, Dict
+from typing import List, Iterator, Dict, NamedTuple
 import functools
 import logging
 import multiprocessing
@@ -127,6 +127,11 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         )
 
         buf = []
+
+        class BufferItem(NamedTuple):
+            word_features: Dict[str, np.ndarray]
+            entity_features: Dict[str, np.ndarray]
+
         max_word_len = 1
         max_entity_len = 1
         for item in dataset_sampler:
@@ -138,12 +143,14 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
 
             max_word_len = max(max_word_len, item["word_ids"].size + 2)  # 2 for [CLS] and [SEP]
             max_entity_len = max(max_entity_len, item["entity_ids"].size)
-            buf.append((word_feat, entity_feat, item["page_id"]))
+            buf.append(BufferItem(word_feat, entity_feat))
 
             if len(buf) == self._batch_size:
                 batch = {}
-                batch.update({k: np.stack([o[0][k][:max_word_len] for o in buf]) for k in buf[0][0].keys()})
-                batch.update({k: np.stack([o[1][k][:max_entity_len] for o in buf]) for k in buf[0][1].keys()})
+                word_keys = buf[0].word_features.keys()
+                entity_keys = buf[0].entity_features.keys()
+                batch.update({k: np.stack([o.word_features[k][:max_word_len] for o in buf]) for k in word_keys})
+                batch.update({k: np.stack([o.entity_features[k][:max_entity_len] for o in buf]) for k in entity_keys})
                 self._output_queue.put(batch, True)
 
                 buf = []
