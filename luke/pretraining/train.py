@@ -10,7 +10,6 @@ import time
 from argparse import Namespace
 
 import click
-import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -348,6 +347,10 @@ def run_pretraining(args):
         summary_writer = SummaryWriter(args.log_dir)
         pbar = tqdm(total=num_train_steps, initial=global_step)
 
+    num_tasks = 1
+    if args.entity_prediction_dataset:
+        num_tasks += 1
+
     batch_generator = LukePretrainingBatchGenerator(
         datasets,
         batch_size=train_batch_size,
@@ -361,14 +364,17 @@ def run_pretraining(args):
         mask_words_in_entity_span=args.mask_words_in_entity_span,
         num_workers=num_workers,
         worker_index=worker_index,
-        starting_step=int(global_step * args.batch_size),
+        starting_step=int(global_step * args.batch_size / num_tasks),
         registered_entity_page_only=True,
     )
+
+    multitask_iterators = {"masked_lm": batch_generator.generate_batches()}
+    multitask_models = {"masked_lm": model}
 
     if args.entity_prediction_dataset:
         logger.info("Preparing for Entity-Sentence alignment task...")
         alignment_datasets = [WikipediaPretrainingDataset(d) for d in args.entity_prediction_dataset.split(",")]
-        entity_prediction_iterator = LukePretrainingBatchGenerator(
+        multitask_iterators["entity_prediction"] = LukePretrainingBatchGenerator(
             alignment_datasets,
             batch_size=train_batch_size,
             masked_lm_prob=0.0,
@@ -381,7 +387,7 @@ def run_pretraining(args):
             mask_words_in_entity_span=False,
             num_workers=num_workers,
             worker_index=worker_index,
-            starting_step=int(global_step * args.batch_size),
+            starting_step=int(global_step * args.batch_size / num_tasks),
             word_only=True,
             registered_entity_page_only=True,
         ).generate_batches()
@@ -390,13 +396,16 @@ def run_pretraining(args):
         entity_prediction_model.train()
         entity_prediction_model.to(device)
         share_modules(model, entity_prediction_model)
+        multitask_models["entity_prediction"] = entity_prediction_model
 
     tr_loss = 0
     accumulation_count = 0
     prev_error = False
     prev_step_time = time.time()
     prev_save_time = time.time()
-    for batch in batch_generator.generate_batches():
+    for task, batch in MultitaskIterator(multitask_iterators, args.gradient_accumulation_steps):
+        print(task)
+        model = multitask_models[task]
         try:
             batch = {k: torch.from_numpy(v).to(device) for k, v in batch.items()}
             loss = model(**batch)["loss"]

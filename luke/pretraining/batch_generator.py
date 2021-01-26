@@ -370,8 +370,9 @@ class DatasetSampler:
 
 
 class MultitaskIterator:
-    def __init__(self, iterators: Dict[str, Iterator]):
+    def __init__(self, iterators: Dict[str, Iterator], gradient_accumulation_steps: int = 1):
         self._iterators = iterators
+        self._gradient_accumulation_steps = gradient_accumulation_steps
 
     def __iter__(self):
         remaining = set(self._iterators.keys())
@@ -380,7 +381,8 @@ class MultitaskIterator:
             for task, batch_iterator in self._iterators.items():
                 if task in remaining:
                     try:
-                        batch = next(batch_iterator)
-                        yield task, batch
+                        for _ in range(self._gradient_accumulation_steps):
+                            batch = next(batch_iterator)
+                            yield task, batch
                     except StopIteration:
                         remaining.remove(task)

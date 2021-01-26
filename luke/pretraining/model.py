@@ -132,9 +132,6 @@ class LukePretrainingModel(LukeModel):
 
         return ret
 
-    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
-        return {k: m.get_metric(reset=reset) for k, m in self.metrics.items()}
-
 
 class LukeEntityPredictionModel(LukeModel):
     def __init__(self, config: LukeConfig):
@@ -154,6 +151,8 @@ class LukeEntityPredictionModel(LukeModel):
 
         self.apply(self.init_weights)
 
+        self.metrics = {"entity_prediction_loss": Average(), "entity_prediction_accuracy": Accuracy()}
+
     def forward(
         self,
         word_ids: torch.LongTensor,
@@ -169,10 +168,14 @@ class LukeEntityPredictionModel(LukeModel):
         cls_token_embeddings = word_sequence_output[:, 0]
 
         entity_scores = self.entity_predictions(cls_token_embeddings)
-        ret = {}
-        ret["loss"] = self.loss_func(entity_scores, page_id)
 
-        return ret
+        loss = self.loss_func(entity_scores, page_id)
+        self.metrics["entity_prediction_loss"](loss)
+        self.metrics["entity_prediction_accuracy"](
+            prediction=torch.argmax(entity_scores, dim=1), target=page_id
+        )
+
+        return {"loss": loss}
 
 
 def share_modules(model1: LukeModel, model2: LukeModel):

@@ -191,6 +191,9 @@ class LukeModel(nn.Module):
 
         return extended_attention_mask
 
+    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
+        return {k: m.get_metric(reset=reset) for k, m in self.metrics.items()}
+
 
 class LukeEntityAwareAttentionModel(LukeModel):
     def __init__(self, config):
