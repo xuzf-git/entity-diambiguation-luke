@@ -1,11 +1,11 @@
-from typing import Optional
+from typing import Optional, Dict
 import torch
 from torch import nn
 from transformers.modeling_bert import ACT2FN, BertPreTrainingHeads
 from transformers.modeling_roberta import RobertaLMHead
 
 from luke.model import LukeModel, LukeConfig
-from examples.utils.retrieval.embedding_similarity_loss import InBatchSoftmax
+from luke.pretraining.metrics import Average, Accuracy
 
 
 class EntityPredictionHeadTransform(nn.Module):
@@ -56,6 +56,13 @@ class LukePretrainingModel(LukeModel):
 
         self.apply(self.init_weights)
 
+        self.metrics = {
+            "masked_lm_loss": Average(),
+            "masked_lm_accuracy": Accuracy(),
+            "masked_entity_loss": Average(),
+            "masked_entity_accuracy": Accuracy(),
+        }
+
     def forward(
         self,
         word_ids: torch.LongTensor,
@@ -95,14 +102,12 @@ class LukePretrainingModel(LukeModel):
                 entity_scores = self.entity_predictions(target_entity_sequence_output)
                 entity_scores = entity_scores.view(-1, self.config.entity_vocab_size)
 
-                ret["masked_entity_loss"] = loss_fn(entity_scores, target_entity_labels)
-                ret["masked_entity_correct"] = (torch.argmax(entity_scores, 1).data == target_entity_labels.data).sum()
-                ret["masked_entity_total"] = target_entity_labels.ne(-1).sum()
-                ret["loss"] += ret["masked_entity_loss"]
-            else:
-                ret["masked_entity_loss"] = word_ids.new_tensor(0.0, dtype=model_dtype)
-                ret["masked_entity_correct"] = word_ids.new_tensor(0, dtype=torch.long)
-                ret["masked_entity_total"] = word_ids.new_tensor(0, dtype=torch.long)
+                masked_entity_loss = loss_fn(entity_scores, target_entity_labels)
+                self.metrics["masked_entity_loss"](masked_entity_loss)
+                self.metrics["masked_entity_accuracy"](
+                    prediction=torch.argmax(entity_scores, dim=1), target=target_entity_labels
+                )
+                ret["loss"] += masked_entity_loss
 
         if masked_lm_labels is not None:
             masked_lm_mask = masked_lm_labels != -1
@@ -117,16 +122,18 @@ class LukePretrainingModel(LukeModel):
                 masked_lm_scores = masked_lm_scores.view(-1, self.config.vocab_size)
                 masked_lm_labels = torch.masked_select(masked_lm_labels, masked_lm_mask)
 
-                ret["masked_lm_loss"] = loss_fn(masked_lm_scores, masked_lm_labels)
-                ret["masked_lm_correct"] = (torch.argmax(masked_lm_scores, 1).data == masked_lm_labels.data).sum()
-                ret["masked_lm_total"] = masked_lm_labels.ne(-1).sum()
-                ret["loss"] += ret["masked_lm_loss"]
-            else:
-                ret["masked_lm_loss"] = word_ids.new_tensor(0.0, dtype=model_dtype)
-                ret["masked_lm_correct"] = word_ids.new_tensor(0, dtype=torch.long)
-                ret["masked_lm_total"] = word_ids.new_tensor(0, dtype=torch.long)
+                masked_lm_loss = loss_fn(masked_lm_scores, masked_lm_labels)
+
+                self.metrics["masked_lm_loss"](masked_lm_loss)
+                self.metrics["masked_lm_accuracy"](
+                    prediction=torch.argmax(masked_lm_scores, dim=1), target=masked_lm_labels
+                )
+                ret["loss"] += masked_lm_loss
 
         return ret
+
+    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
+        return {k: m.get_metric(reset=reset) for k, m in self.metrics.items()}
 
 
 class LukeEntityPredictionModel(LukeModel):
@@ -142,8 +149,6 @@ class LukeEntityPredictionModel(LukeModel):
 
         self.entity_predictions = EntityPredictionHead(config)
         self.entity_predictions.decoder.weight = self.entity_embeddings.entity_embeddings.weight
-
-        self.embedding_similarity_loss = InBatchSoftmax()
 
         self.loss_func = nn.CrossEntropyLoss(ignore_index=-1)
 

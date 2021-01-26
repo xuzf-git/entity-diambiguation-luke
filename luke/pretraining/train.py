@@ -365,13 +365,10 @@ def run_pretraining(args):
         registered_entity_page_only=True,
     )
 
-    multitask_iterators = {"masked_lm": batch_generator.generate_batches()}
-    multitask_models = {"masked_lm": model}
-
     if args.entity_prediction_dataset:
         logger.info("Preparing for Entity-Sentence alignment task...")
         alignment_datasets = [WikipediaPretrainingDataset(d) for d in args.entity_prediction_dataset.split(",")]
-        multitask_iterators["entity_prediction"] = LukePretrainingBatchGenerator(
+        entity_prediction_iterator = LukePretrainingBatchGenerator(
             alignment_datasets,
             batch_size=train_batch_size,
             masked_lm_prob=0.0,
@@ -389,25 +386,20 @@ def run_pretraining(args):
             registered_entity_page_only=True,
         ).generate_batches()
 
-        alignment_model = LukeEntityPredictionModel(config)
-        alignment_model.train()
-        alignment_model.to(device)
-        share_modules(model, alignment_model)
-        multitask_models["entity_prediction"] = alignment_model
+        entity_prediction_model = LukeEntityPredictionModel(config)
+        entity_prediction_model.train()
+        entity_prediction_model.to(device)
+        share_modules(model, entity_prediction_model)
 
     tr_loss = 0
     accumulation_count = 0
-    results = []
     prev_error = False
     prev_step_time = time.time()
     prev_save_time = time.time()
-    for task, batch in MultitaskIterator(multitask_iterators):
+    for batch in batch_generator.generate_batches():
         try:
             batch = {k: torch.from_numpy(v).to(device) for k, v in batch.items()}
-            model = multitask_models[task]
-            result = model(**batch)
-            loss = result["loss"]
-            result = {k: v.to("cpu").detach().numpy() for k, v in result.items()}
+            loss = model(**batch)["loss"]
 
             if args.gradient_accumulation_steps > 1:
                 loss = loss / args.gradient_accumulation_steps
@@ -443,7 +435,6 @@ def run_pretraining(args):
         prev_error = False
         tr_loss += loss.item()
         loss = None
-        results.append(result)
 
         if accumulation_count == args.gradient_accumulation_steps:
             if args.max_grad_norm != 0.0:
@@ -465,17 +456,7 @@ def run_pretraining(args):
             summary["batch_run_time"] = current_time - prev_step_time
             prev_step_time = current_time
 
-            for name in ("masked_lm", "masked_entity"):
-                try:
-                    summary[name + "_loss"] = np.concatenate([r[name + "_loss"].flatten() for r in results]).mean()
-                    correct = np.concatenate([r[name + "_correct"].flatten() for r in results]).sum()
-                    total = np.concatenate([r[name + "_total"].flatten() for r in results]).sum()
-                    if total > 0:
-                        summary[name + "_acc"] = correct / total
-                except KeyError:
-                    continue
-
-            results = []
+            summary.update(model.get_metrics(reset=True))
 
             if args.local_rank == -1 or worker_index == 0:
                 for (name, value) in summary.items():
