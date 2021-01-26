@@ -365,7 +365,6 @@ def run_pretraining(args):
         num_workers=num_workers,
         worker_index=worker_index,
         starting_step=int(global_step * args.batch_size / num_tasks),
-        registered_entity_page_only=True,
     )
 
     multitask_iterators = {"masked_lm": batch_generator.generate_batches()}
