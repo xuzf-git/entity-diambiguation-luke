@@ -23,7 +23,7 @@ from transformers import (
 
 from luke.model import LukeConfig
 from luke.optimization import LukeAdamW
-from luke.pretraining.batch_generator import LukePretrainingBatchGenerator
+from luke.pretraining.batch_generator import LukePretrainingBatchGenerator, MultitaskIterator
 from luke.pretraining.dataset import WikipediaPretrainingDataset
 from luke.pretraining.model import LukePretrainingModel
 from luke.utils.model_utils import ENTITY_VOCAB_FILE
@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.argument("dataset_dir")
 @click.argument("output_dir", type=click.Path())
+@click.option("--entity-sentence-alignment-dataset", type=str)
 @click.option("--sampling-smoothing", default=0.7)
 @click.option("--parallel", is_flag=True)
 @click.option("--cpu", is_flag=True)
@@ -363,15 +364,37 @@ def run_pretraining(args):
         starting_step=int(global_step * args.batch_size),
     )
 
+    multitask_iterator = MultitaskIterator({"masked_lm": batch_generator.generate_batches()})
+    multitask_models = {"masked_lm": model}
+
+    if args.entity_sentence_alignment_dataset:
+        alignment_datasets = [WikipediaPretrainingDataset(d) for d in args.entity_sentence_alignment_dataset.split(",")]
+        multitask_iterator["entity_sentence_alignment"] = LukePretrainingBatchGenerator(
+            alignment_datasets,
+            batch_size=train_batch_size,
+            masked_lm_prob=0.0,
+            masked_entity_prob=0.0,
+            whole_word_masking=False,
+            unmasked_word_prob=0.0,
+            random_word_prob=0.0,
+            unmasked_entity_prob=0.0,
+            random_entity_prob=0.0,
+            mask_words_in_entity_span=False,
+            num_workers=num_workers,
+            worker_index=worker_index,
+            starting_step=int(global_step * args.batch_size),
+        )
+
     tr_loss = 0
     accumulation_count = 0
     results = []
     prev_error = False
     prev_step_time = time.time()
     prev_save_time = time.time()
-    for batch in batch_generator.generate_batches():
+    for task, batch in multitask_iterator:
         try:
             batch = {k: torch.from_numpy(v).to(device) for k, v in batch.items()}
+            model = multitask_models[task]
             result = model(**batch)
             loss = result["loss"]
             result = {k: v.to("cpu").detach().numpy() for k, v in result.items()}
