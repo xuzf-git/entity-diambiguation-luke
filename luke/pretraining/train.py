@@ -362,6 +362,7 @@ def run_pretraining(args):
         num_workers=num_workers,
         worker_index=worker_index,
         starting_step=int(global_step * args.batch_size),
+        registered_entity_page_only=True
     )
 
     multitask_iterator = MultitaskIterator({"masked_lm": batch_generator.generate_batches()})
@@ -384,6 +385,7 @@ def run_pretraining(args):
             worker_index=worker_index,
             starting_step=int(global_step * args.batch_size),
             word_only=True,
+            registered_entity_page_only=True
         )
 
     tr_loss = 0

@@ -35,6 +35,7 @@ class LukePretrainingBatchGenerator(object):
         mask_words_in_entity_span: bool,
         starting_step: int,
         word_only: bool = False,
+        registered_entity_page_only=False,
         **dataset_kwargs
     ):
 
@@ -52,6 +53,7 @@ class LukePretrainingBatchGenerator(object):
             mask_words_in_entity_span=mask_words_in_entity_span,
             starting_step=starting_step,
             word_only=word_only,
+            registered_entity_page_only=registered_entity_page_only,
             **dataset_kwargs
         )
 
@@ -90,6 +92,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         mask_words_in_entity_span: bool,
         starting_step: int,
         word_only: bool,
+        registered_entity_page_only: bool,
         **dataset_kwargs
     ):
         super(LukePretrainingBatchWorker, self).__init__()
@@ -107,6 +110,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._mask_words_in_entity_span = mask_words_in_entity_span
         self._starting_step = starting_step
         self._word_only = word_only
+        self._registered_entity_page_only = registered_entity_page_only
         self._dataset_kwargs = dataset_kwargs
 
         if "shuffle_buffer_size" not in self._dataset_kwargs:
@@ -139,6 +143,9 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         max_word_len = 1
         max_entity_len = 1
         for item in dataset_sampler:
+
+            if self._registered_entity_page_only and item["page_id"] == -1:
+                continue
 
             if not self._word_only:
                 entity_feat, masked_entity_positions = self._create_entity_features(
