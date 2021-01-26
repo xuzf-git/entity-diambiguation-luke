@@ -404,7 +404,6 @@ def run_pretraining(args):
     prev_step_time = time.time()
     prev_save_time = time.time()
     for task, batch in MultitaskIterator(multitask_iterators, args.gradient_accumulation_steps):
-        print(task)
         model = multitask_models[task]
         try:
             batch = {k: torch.from_numpy(v).to(device) for k, v in batch.items()}
@@ -465,7 +464,11 @@ def run_pretraining(args):
             summary["batch_run_time"] = current_time - prev_step_time
             prev_step_time = current_time
 
-            summary.update(model.get_metrics(reset=True))
+            if args.parallel:
+                model_metrics = model.module.get_metrics(reset=True)
+            else:
+                model_metrics = model.get_metrics(reset=True)
+            summary.update(model_metrics)
 
             if args.local_rank == -1 or worker_index == 0:
                 for (name, value) in summary.items():
