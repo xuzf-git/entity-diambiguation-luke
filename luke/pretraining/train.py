@@ -371,10 +371,12 @@ def run_pretraining(args):
     multitask_models = {"masked_lm": model}
 
     if args.entity_prediction_dataset:
-        logger.info("Preparing for Entity-Sentence alignment task...")
-        alignment_datasets = [WikipediaPretrainingDataset(d) for d in args.entity_prediction_dataset.split(",")]
+        logger.info("Preparing for the entity prediction task...")
+        entity_prediction_datasets = [WikipediaPretrainingDataset(d) for d in args.entity_prediction_dataset.split(",")]
+        entity_predicion_dataset_size = sum([len(d) for d in entity_prediction_datasets])
+        num_train_steps += math.ceil(entity_predicion_dataset_size / args.batch_size * args.num_epochs)
         multitask_iterators["entity_prediction"] = LukePretrainingBatchGenerator(
-            alignment_datasets,
+            entity_prediction_datasets,
             batch_size=train_batch_size,
             masked_lm_prob=0.0,
             masked_entity_prob=0.0,
