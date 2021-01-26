@@ -34,6 +34,7 @@ class LukePretrainingBatchGenerator(object):
         random_entity_prob: float,
         mask_words_in_entity_span: bool,
         starting_step: int,
+        word_only: bool = False,
         **dataset_kwargs
     ):
 
@@ -50,6 +51,7 @@ class LukePretrainingBatchGenerator(object):
             random_entity_prob=random_entity_prob,
             mask_words_in_entity_span=mask_words_in_entity_span,
             starting_step=starting_step,
+            word_only=word_only,
             **dataset_kwargs
         )
 
@@ -87,6 +89,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         random_entity_prob: float,
         mask_words_in_entity_span: bool,
         starting_step: int,
+        word_only: bool,
         **dataset_kwargs
     ):
         super(LukePretrainingBatchWorker, self).__init__()
@@ -103,6 +106,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._random_entity_prob = random_entity_prob
         self._mask_words_in_entity_span = mask_words_in_entity_span
         self._starting_step = starting_step
+        self._word_only = word_only
         self._dataset_kwargs = dataset_kwargs
 
         if "shuffle_buffer_size" not in self._dataset_kwargs:
@@ -136,21 +140,29 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         max_entity_len = 1
         for item in dataset_sampler:
 
-            entity_feat, masked_entity_positions = self._create_entity_features(
-                item["entity_ids"], item["entity_position_ids"]
-            )
-            word_feat = self._create_word_features(item["word_ids"], masked_entity_positions)
+            if not self._word_only:
+                entity_feat, masked_entity_positions = self._create_entity_features(
+                    item["entity_ids"], item["entity_position_ids"]
+                )
+                max_entity_len = max(max_entity_len, item["entity_ids"].size)
+            else:
+                entity_feat = None
+                masked_entity_positions = []
 
+            word_feat = self._create_word_features(item["word_ids"], masked_entity_positions)
             max_word_len = max(max_word_len, item["word_ids"].size + 2)  # 2 for [CLS] and [SEP]
-            max_entity_len = max(max_entity_len, item["entity_ids"].size)
+
             buf.append(BufferItem(word_feat, entity_feat))
 
             if len(buf) == self._batch_size:
                 batch = {}
                 word_keys = buf[0].word_features.keys()
-                entity_keys = buf[0].entity_features.keys()
                 batch.update({k: np.stack([o.word_features[k][:max_word_len] for o in buf]) for k in word_keys})
-                batch.update({k: np.stack([o.entity_features[k][:max_entity_len] for o in buf]) for k in entity_keys})
+                if not self._word_only:
+                    entity_keys = buf[0].entity_features.keys()
+                    batch.update(
+                        {k: np.stack([o.entity_features[k][:max_entity_len] for o in buf]) for k in entity_keys}
+                    )
                 self._output_queue.put(batch, True)
 
                 buf = []
