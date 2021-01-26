@@ -396,6 +396,15 @@ def run_pretraining(args):
         entity_prediction_model.train()
         entity_prediction_model.to(device)
         share_modules(model, entity_prediction_model)
+
+        if args.local_rank != -1:
+            entity_prediction_model = torch.nn.parallel.DistributedDataParallel(
+                entity_prediction_model,
+                device_ids=[args.local_rank],
+                output_device=args.local_rank,
+                broadcast_buffers=False,
+                find_unused_parameters=True,
+            )
         multitask_models["entity_prediction"] = entity_prediction_model
 
     tr_loss = 0
