@@ -35,7 +35,8 @@ class LukePretrainingBatchGenerator(object):
         mask_words_in_entity_span: bool,
         starting_step: int,
         word_only: bool = False,
-        registered_entity_page_only=False,
+        registered_entity_page_only: bool=False,
+        entity_prediction: bool = False,
         **dataset_kwargs
     ):
 
@@ -54,6 +55,7 @@ class LukePretrainingBatchGenerator(object):
             starting_step=starting_step,
             word_only=word_only,
             registered_entity_page_only=registered_entity_page_only,
+            entity_prediction = entity_prediction,
             **dataset_kwargs
         )
 
@@ -93,6 +95,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         starting_step: int,
         word_only: bool,
         registered_entity_page_only: bool,
+        entity_prediction: bool,
         **dataset_kwargs
     ):
         super(LukePretrainingBatchWorker, self).__init__()
@@ -111,6 +114,7 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._starting_step = starting_step
         self._word_only = word_only
         self._registered_entity_page_only = registered_entity_page_only
+        self._entity_prediction = entity_prediction
         self._dataset_kwargs = dataset_kwargs
 
         if "shuffle_buffer_size" not in self._dataset_kwargs:
@@ -166,7 +170,9 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
                 batch = {}
                 word_keys = buf[0].word_features.keys()
                 batch.update({k: np.stack([o.word_features[k][:max_word_len] for o in buf]) for k in word_keys})
-                batch.update({"page_id": np.array([o.page_id for o in buf], dtype=np.int)})
+
+                if self._entity_prediction:
+                    batch.update({"page_id": np.array([o.page_id for o in buf], dtype=np.int)})
 
                 if not self._word_only:
                     entity_keys = buf[0].entity_features.keys()

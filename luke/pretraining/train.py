@@ -10,6 +10,7 @@ import time
 from argparse import Namespace
 
 import click
+import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -22,9 +23,9 @@ from transformers import (
 
 from luke.model import LukeConfig
 from luke.optimization import LukeAdamW
-from luke.pretraining.batch_generator import LukePretrainingBatchGenerator, MultitaskIterator
+from luke.pretraining.batch_generator import LukePretrainingBatchGenerator
 from luke.pretraining.dataset import WikipediaPretrainingDataset
-from luke.pretraining.model import LukePretrainingModel, LukeEntityPredictionModel, share_modules
+from luke.pretraining.model import LukePretrainingModel
 from luke.utils.model_utils import ENTITY_VOCAB_FILE
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,8 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.argument("dataset_dir")
 @click.argument("output_dir", type=click.Path())
-@click.option("--entity-prediction-dataset", type=str)
+@click.option("--entity-prediction", is_flag=True)
+@click.option("--registered-entity-page-only", is_flag=True)
 @click.option("--sampling-smoothing", default=0.7)
 @click.option("--parallel", is_flag=True)
 @click.option("--cpu", is_flag=True)
@@ -293,7 +295,7 @@ def run_pretraining(args):
             find_unused_parameters=True,
         )
 
-    if args.validation_config_file is not None:
+    if args.validation_config_file is not None and (args.local_rank == -1 or worker_index == 0):
         from .validation_evaluator import ValidationEvaluator
         from allennlp.common.params import Params, _environment_variables
         from allennlp.common.util import import_module_and_submodules
@@ -347,10 +349,6 @@ def run_pretraining(args):
         summary_writer = SummaryWriter(args.log_dir)
         pbar = tqdm(total=num_train_steps, initial=global_step)
 
-    num_tasks = 1
-    if args.entity_prediction_dataset:
-        num_tasks += 1
-
     batch_generator = LukePretrainingBatchGenerator(
         datasets,
         batch_size=train_batch_size,
@@ -364,60 +362,23 @@ def run_pretraining(args):
         mask_words_in_entity_span=args.mask_words_in_entity_span,
         num_workers=num_workers,
         worker_index=worker_index,
-        starting_step=int(global_step * args.batch_size / num_tasks),
+        starting_step=int(global_step * args.batch_size),
+        registered_entity_page_only=args.registered_entity_page_only,
+        entity_prediction=args.entity_prediction
     )
-
-    multitask_iterators = {"masked_lm": batch_generator.generate_batches()}
-    multitask_models = {"masked_lm": model}
-
-    if args.entity_prediction_dataset:
-        logger.info("Preparing for the entity prediction task...")
-        entity_prediction_datasets = [WikipediaPretrainingDataset(d) for d in args.entity_prediction_dataset.split(",")]
-        entity_predicion_dataset_size = sum([len(d) for d in entity_prediction_datasets])
-        num_train_steps += math.ceil(entity_predicion_dataset_size / args.batch_size * args.num_epochs)
-        multitask_iterators["entity_prediction"] = LukePretrainingBatchGenerator(
-            entity_prediction_datasets,
-            batch_size=train_batch_size,
-            masked_lm_prob=0.0,
-            masked_entity_prob=0.0,
-            whole_word_masking=False,
-            unmasked_word_prob=0.0,
-            random_word_prob=0.0,
-            unmasked_entity_prob=0.0,
-            random_entity_prob=0.0,
-            mask_words_in_entity_span=False,
-            num_workers=num_workers,
-            worker_index=worker_index,
-            starting_step=int(global_step * args.batch_size / num_tasks),
-            word_only=True,
-            registered_entity_page_only=True,
-        ).generate_batches()
-
-        entity_prediction_model = LukeEntityPredictionModel(config)
-        entity_prediction_model.train()
-        entity_prediction_model.to(device)
-        share_modules(model, entity_prediction_model)
-
-        if args.local_rank != -1:
-            entity_prediction_model = torch.nn.parallel.DistributedDataParallel(
-                entity_prediction_model,
-                device_ids=[args.local_rank],
-                output_device=args.local_rank,
-                broadcast_buffers=False,
-                find_unused_parameters=True,
-            )
-        multitask_models["entity_prediction"] = entity_prediction_model
 
     tr_loss = 0
     accumulation_count = 0
+    results = []
     prev_error = False
     prev_step_time = time.time()
     prev_save_time = time.time()
-    for task, batch in MultitaskIterator(multitask_iterators, args.gradient_accumulation_steps):
-        model = multitask_models[task]
+    for batch in batch_generator.generate_batches():
         try:
             batch = {k: torch.from_numpy(v).to(device) for k, v in batch.items()}
-            loss = model(**batch)["loss"]
+            result = model(**batch)
+            loss = result["loss"]
+            result = {k: v.to("cpu").detach().numpy() for k, v in result.items()}
 
             if args.gradient_accumulation_steps > 1:
                 loss = loss / args.gradient_accumulation_steps
@@ -453,6 +414,7 @@ def run_pretraining(args):
         prev_error = False
         tr_loss += loss.item()
         loss = None
+        results.append(result)
 
         if accumulation_count == args.gradient_accumulation_steps:
             if args.max_grad_norm != 0.0:
@@ -474,11 +436,17 @@ def run_pretraining(args):
             summary["batch_run_time"] = current_time - prev_step_time
             prev_step_time = current_time
 
-            if args.parallel:
-                model_metrics = model.module.get_metrics(reset=True)
-            else:
-                model_metrics = model.get_metrics(reset=True)
-            summary.update(model_metrics)
+            for name in ("masked_lm", "masked_entity"):
+                try:
+                    summary[name + "_loss"] = np.concatenate([r[name + "_loss"].flatten() for r in results]).mean()
+                    correct = np.concatenate([r[name + "_correct"].flatten() for r in results]).sum()
+                    total = np.concatenate([r[name + "_total"].flatten() for r in results]).sum()
+                    if total > 0:
+                        summary[name + "_acc"] = correct / total
+                except KeyError:
+                    continue
+
+            results = []
 
             if args.local_rank == -1 or worker_index == 0:
                 for (name, value) in summary.items():
