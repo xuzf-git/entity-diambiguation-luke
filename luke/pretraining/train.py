@@ -363,7 +363,6 @@ def run_pretraining(args):
         num_workers=num_workers,
         worker_index=worker_index,
         starting_step=int(global_step * args.batch_size),
-        registered_entity_page_only=args.registered_entity_page_only,
         entity_prediction=args.entity_prediction
     )
 
