@@ -1,4 +1,4 @@
-from typing import List, Iterator, Dict
+from typing import List, Iterator, Dict, NamedTuple
 import functools
 import logging
 import multiprocessing
@@ -34,6 +34,8 @@ class LukePretrainingBatchGenerator(object):
         random_entity_prob: float,
         mask_words_in_entity_span: bool,
         starting_step: int,
+        word_only: bool = False,
+        cls_entity_predction: bool = False,
         **dataset_kwargs
     ):
 
@@ -50,6 +52,8 @@ class LukePretrainingBatchGenerator(object):
             random_entity_prob=random_entity_prob,
             mask_words_in_entity_span=mask_words_in_entity_span,
             starting_step=starting_step,
+            word_only=word_only,
+            cls_entity_predction = cls_entity_predction,
             **dataset_kwargs
         )
 
@@ -87,6 +91,8 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         random_entity_prob: float,
         mask_words_in_entity_span: bool,
         starting_step: int,
+        word_only: bool,
+        cls_entity_predction: bool,
         **dataset_kwargs
     ):
         super(LukePretrainingBatchWorker, self).__init__()
@@ -103,6 +109,8 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._random_entity_prob = random_entity_prob
         self._mask_words_in_entity_span = mask_words_in_entity_span
         self._starting_step = starting_step
+        self._word_only = word_only
+        self._cls_entity_predction = cls_entity_predction
         self._dataset_kwargs = dataset_kwargs
 
         if "shuffle_buffer_size" not in self._dataset_kwargs:
@@ -127,23 +135,42 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         )
 
         buf = []
+
+        class BufferItem(NamedTuple):
+            word_features: Dict[str, np.ndarray]
+            entity_features: Dict[str, np.ndarray]
+            page_id: int
+
         max_word_len = 1
         max_entity_len = 1
         for item in dataset_sampler:
+            if not self._word_only:
+                entity_feat, masked_entity_positions = self._create_entity_features(
+                    item["entity_ids"], item["entity_position_ids"]
+                )
+                max_entity_len = max(max_entity_len, item["entity_ids"].size)
+            else:
+                entity_feat = None
+                masked_entity_positions = []
 
-            entity_feat, masked_entity_positions = self._create_entity_features(
-                item["entity_ids"], item["entity_position_ids"]
-            )
             word_feat = self._create_word_features(item["word_ids"], masked_entity_positions)
-
             max_word_len = max(max_word_len, item["word_ids"].size + 2)  # 2 for [CLS] and [SEP]
-            max_entity_len = max(max_entity_len, item["entity_ids"].size)
-            buf.append((word_feat, entity_feat, item["page_id"]))
+
+            buf.append(BufferItem(word_feat, entity_feat, item["page_id"]))
 
             if len(buf) == self._batch_size:
                 batch = {}
-                batch.update({k: np.stack([o[0][k][:max_word_len] for o in buf]) for k in buf[0][0].keys()})
-                batch.update({k: np.stack([o[1][k][:max_entity_len] for o in buf]) for k in buf[0][1].keys()})
+                word_keys = buf[0].word_features.keys()
+                batch.update({k: np.stack([o.word_features[k][:max_word_len] for o in buf]) for k in word_keys})
+
+                if self._cls_entity_predction:
+                    batch.update({"page_id": np.array([o.page_id for o in buf], dtype=np.int)})
+
+                if not self._word_only:
+                    entity_keys = buf[0].entity_features.keys()
+                    batch.update(
+                        {k: np.stack([o.entity_features[k][:max_entity_len] for o in buf]) for k in entity_keys}
+                    )
                 self._output_queue.put(batch, True)
 
                 buf = []

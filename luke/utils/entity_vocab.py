@@ -158,7 +158,7 @@ class EntityVocab(object):
 
         with open(out_file, "w") as f:
             for ent_id, (title, count) in enumerate(title_dict.items()):
-                json.dump({"id": ent_id, "entities": [[title, language]], "count": count}, f)
+                json.dump({"id": ent_id, "entities": [[title, language]], "count": count}, f, ensure_ascii=False)
                 f.write("\n")
 
     @staticmethod
@@ -247,5 +247,5 @@ def build_multilingual_entity_vocab(
     logger.info(f"Saving to {out_file}")
     with open(out_file, "w") as f:
         for ent_id, item in enumerate(json_dicts):
-            json.dump({"id": ent_id, **item}, f)
+            json.dump({"id": ent_id, **item}, f, ensure_ascii=False)
             f.write("\n")
