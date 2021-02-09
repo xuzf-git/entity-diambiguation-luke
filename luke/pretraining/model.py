@@ -55,6 +55,10 @@ class LukePretrainingModel(LukeModel):
         self.entity_predictions.decoder.weight = self.entity_embeddings.entity_embeddings.weight
         self.loss_fn = nn.CrossEntropyLoss(ignore_index=-1)
 
+        if self.config.cls_entity_prediction:
+            self.cls_entity_predictions = EntityPredictionHead(config)
+            self.cls_entity_predictions.decoder.weight = self.entity_embeddings.entity_embeddings.weight
+
         self.apply(self.init_weights)
 
         self.metrics = {
@@ -136,7 +140,7 @@ class LukePretrainingModel(LukeModel):
         if page_id is not None:
             cls_token_embeddings = word_sequence_output[:, 0]
 
-            entity_scores = self.entity_predictions(cls_token_embeddings)
+            entity_scores = self.cls_entity_predictions(cls_token_embeddings)
             entity_prediction_loss = self.loss_fn(entity_scores, page_id)
 
             ret["loss"] += entity_prediction_loss

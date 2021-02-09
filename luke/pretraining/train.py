@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.argument("dataset_dir")
 @click.argument("output_dir", type=click.Path())
-@click.option("--entity-prediction", is_flag=True)
+@click.option("--cls-entity-prediction", is_flag=True)
 @click.option("--registered-entity-page-only", is_flag=True)
 @click.option("--sampling-smoothing", default=0.7)
 @click.option("--parallel", is_flag=True)
@@ -199,6 +199,7 @@ def run_pretraining(args):
         entity_vocab_size=entity_vocab.size,
         bert_model_name=args.bert_model_name,
         entity_emb_size=args.entity_emb_size,
+        cls_entity_prediction=args.cls_entity_prediction,
         **bert_config.to_dict(),
     )
     model = LukePretrainingModel(config)
@@ -363,7 +364,7 @@ def run_pretraining(args):
         num_workers=num_workers,
         worker_index=worker_index,
         starting_step=int(global_step * args.batch_size),
-        entity_prediction=args.entity_prediction
+        cls_entity_prediction=args.cls_entity_prediction
     )
 
     tr_loss = 0

@@ -21,7 +21,13 @@ logger = logging.getLogger(__name__)
 
 class LukeConfig(BertConfig):
     def __init__(
-        self, vocab_size: int, entity_vocab_size: int, bert_model_name: str, entity_emb_size: int = None, **kwargs
+        self,
+        vocab_size: int,
+        entity_vocab_size: int,
+        bert_model_name: str,
+        entity_emb_size: int = None,
+        cls_entity_prediction: bool = False,
+        **kwargs,
     ):
         super(LukeConfig, self).__init__(vocab_size, **kwargs)
 
@@ -31,6 +37,8 @@ class LukeConfig(BertConfig):
             self.entity_emb_size = self.hidden_size
         else:
             self.entity_emb_size = entity_emb_size
+
+        self.cls_entity_prediction = cls_entity_prediction
 
     def __repr__(self):
         return "{} {}".format(self.__class__.__name__, self.to_json_string(use_diff=False))
