@@ -35,7 +35,6 @@ class LukePretrainingBatchGenerator(object):
         mask_words_in_entity_span: bool,
         starting_step: int,
         word_only: bool = False,
-        registered_entity_page_only: bool=False,
         entity_prediction: bool = False,
         **dataset_kwargs
     ):
@@ -54,7 +53,6 @@ class LukePretrainingBatchGenerator(object):
             mask_words_in_entity_span=mask_words_in_entity_span,
             starting_step=starting_step,
             word_only=word_only,
-            registered_entity_page_only=registered_entity_page_only,
             entity_prediction = entity_prediction,
             **dataset_kwargs
         )
