@@ -1,8 +1,8 @@
 from typing import Optional, Dict
 import torch
 from torch import nn
-from transformers.modeling_bert import ACT2FN, BertPreTrainingHeads
-from transformers.modeling_roberta import RobertaLMHead
+from transformers.models.bert.modeling_bert import ACT2FN, BertPreTrainingHeads
+from transformers.models.roberta.modeling_roberta import RobertaLMHead
 
 from luke.model import LukeModel, LukeConfig
 from luke.pretraining.metrics import Average, Accuracy

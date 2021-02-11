@@ -5,7 +5,7 @@ from typing import Dict
 import torch
 import torch.nn.functional as F
 from torch import nn
-from transformers.modeling_bert import (
+from transformers.models.bert.modeling_bert import (
     BertConfig,
     BertEmbeddings,
     BertEncoder,
@@ -14,7 +14,7 @@ from transformers.modeling_bert import (
     BertPooler,
     BertSelfOutput,
 )
-from transformers.modeling_roberta import RobertaEmbeddings
+from transformers.models.roberta.modeling_roberta import RobertaEmbeddings
 
 logger = logging.getLogger(__name__)
 

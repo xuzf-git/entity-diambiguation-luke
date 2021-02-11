@@ -1,4 +1,4 @@
-from typing import List, Iterator, Dict, NamedTuple
+from typing import List, Dict, NamedTuple
 import functools
 import logging
 import multiprocessing
@@ -8,7 +8,7 @@ import unicodedata
 from collections import Counter
 
 import numpy as np
-from transformers.tokenization_roberta import RobertaTokenizer
+from transformers.models.roberta import RobertaTokenizer
 
 from luke.pretraining.dataset import WikipediaPretrainingDataset
 from luke.utils.entity_vocab import MASK_TOKEN
