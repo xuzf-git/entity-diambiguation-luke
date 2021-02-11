@@ -109,25 +109,25 @@ def cli(ctx, **kwargs):
             experiment_logger.log_parameter("model_file_name", os.path.basename(args.model_file))
 
 
-from .entity_disambiguation.main import cli as entity_disambiguation_cli
+from examples.entity_disambiguation.main import cli as entity_disambiguation_cli
 
 cli.add_command(entity_disambiguation_cli)
-from .entity_typing.main import cli as entity_typing_cli
+from examples.entity_typing.main import cli as entity_typing_cli
 
 cli.add_command(entity_typing_cli)
-from .ner.main import cli as ner_cli
+from examples.ner.main import cli as ner_cli
 
 cli.add_command(ner_cli)
-from .reading_comprehension.main import cli as reading_comprehension_cli
+from examples.reading_comprehension.main import cli as reading_comprehension_cli
 
 cli.add_command(reading_comprehension_cli)
-from .relation_classification.main import cli as relation_classification_cli
+from examples.relation_classification.main import cli as relation_classification_cli
 
 cli.add_command(relation_classification_cli)
-from .utils.mention_db import cli as mention_db_cli
+from examples.utils.mention_db import cli as mention_db_cli
 
 cli.add_command(mention_db_cli)
-from .entity_span_qa.main import cli as entity_span_qa_cli
+from examples.entity_span_qa.main import cli as entity_span_qa_cli
 
 cli.add_command(entity_span_qa_cli)
 

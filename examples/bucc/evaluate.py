@@ -3,7 +3,8 @@ import json
 import torch
 import tqdm
 import logging
-
+import sys
+sys.path.append("./")
 
 from examples.bucc.reader import parse_bucc_file
 from examples.utils.retrieval.scoring_functions import ScoringFunction
@@ -15,6 +16,7 @@ from allennlp.nn import util as nn_util
 from allennlp.common.util import import_module_and_submodules
 from allennlp.data import DatasetReader, Vocabulary, DataLoader
 from allennlp.common.params import Params, _environment_variables
+
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -64,20 +66,26 @@ def evaluate_bucc(
     import_module_and_submodules("examples")
 
     if "dataset_reader" in config_params:
-        reader = DatasetReader.from_params(config_params.pop("dataset_reader"))
-        source_dataset = reader.read(bucc_source_data_path)
-        target_dataset = reader.read(bucc_target_data_path)
-
+        source_reader = DatasetReader.from_params(config_params.pop("dataset_reader"))
+        target_reader = source_reader
     elif "source_dataset_reader" in config_params and "target_dataset_reader" in config_params:
         source_reader = DatasetReader.from_params(config_params.pop("source_dataset_reader"))
         target_reader = DatasetReader.from_params(config_params.pop("target_dataset_reader"))
-        source_dataset = source_reader.read(bucc_source_data_path)
-        target_dataset = target_reader.read(bucc_target_data_path)
 
-    vocab = Vocabulary.from_instances(source_dataset, **config_params["vocabulary"])
-    vocab.extend_from_vocab(Vocabulary.from_instances(target_dataset, **config_params["vocabulary"]))
-    source_dataset.index_with(vocab)
-    target_dataset.index_with(vocab)
+    source_data_loader = DataLoader.from_params(
+        reader=source_reader, data_path=bucc_source_data_path, params=config_params["data_loader"].duplicate()
+    )
+    target_data_loader = DataLoader.from_params(
+        reader=target_reader, data_path=bucc_target_data_path, params=config_params["data_loader"].duplicate()
+    )
+
+    vocab = Vocabulary.from_instances(source_data_loader.iter_instances(), **config_params["vocabulary"])
+    vocab.extend_from_vocab(
+        Vocabulary.from_instances(target_data_loader.iter_instances(), **config_params["vocabulary"])
+    )
+
+    source_data_loader.index_with(vocab)
+    target_data_loader.index_with(vocab)
 
     if "model" in config_params:
         source_model = Seq2VecEncoder.from_params(vocab=vocab, params=config_params.pop("model"))
@@ -94,9 +102,6 @@ def evaluate_bucc(
     target_model.to(device)
 
     gold_indices = [idx_pair for idx_pair in parse_bucc_file(bucc_gold_data_path)]
-
-    source_data_loader = DataLoader.from_params(dataset=source_dataset, params=config_params["data_loader"].duplicate())
-    target_data_loader = DataLoader.from_params(dataset=target_dataset, params=config_params["data_loader"].duplicate())
 
     logger.info("Extracting embeddings from source...")
     source_embeddings, source_indices = extract_sentence_embeddings(
