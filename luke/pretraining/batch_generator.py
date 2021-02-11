@@ -38,7 +38,6 @@ class LukePretrainingBatchGenerator(object):
         cls_entity_prediction: bool = False,
         **dataset_kwargs
     ):
-
         self._worker_func = functools.partial(
             LukePretrainingBatchWorker,
             datasets=datasets,
@@ -53,7 +52,7 @@ class LukePretrainingBatchGenerator(object):
             mask_words_in_entity_span=mask_words_in_entity_span,
             starting_step=starting_step,
             word_only=word_only,
-            cls_entity_prediction = cls_entity_prediction,
+            cls_entity_prediction=cls_entity_prediction,
             **dataset_kwargs
         )
 
@@ -129,7 +128,6 @@ class LukePretrainingBatchWorker(multiprocessing.Process):
         self._mask_id = self._tokenizer.convert_tokens_to_ids(self._tokenizer.mask_token)
         self._pad_id = self._tokenizer.convert_tokens_to_ids(self._tokenizer.pad_token)
         self._entity_mask_id = representative_dataset.entity_vocab.get_id(MASK_TOKEN, representative_dataset.language)
-
         dataset_sampler = DatasetSampler(
             datasets=self._datasets, dataset_kwargs=self._dataset_kwargs, starting_step=self._starting_step,
         )
@@ -330,7 +328,6 @@ class DatasetSampler:
         for i in range(starting_step // num_workers):
             d = self._sample_dataset()
             skip_counter[d] += num_workers
-
         iterators = {
             d.dataset_dir: d.create_iterator(skip=skip_counter[d], **self._dataset_kwargs) for d in self.datasets
         }

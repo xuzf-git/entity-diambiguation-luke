@@ -108,6 +108,11 @@ class WikipediaPretrainingDataset(object):
         shuffle_seed: int = 0,
         num_parallel_reads: int = 10,
     ):
+
+        # The TensorFlow 2.0 has enabled eager execution by default.
+        # At the starting of algorithm, we need to use this to disable eager execution.
+        tf.compat.v1.disable_eager_execution()
+
         features = dict(
             word_ids=tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
             entity_ids=tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
