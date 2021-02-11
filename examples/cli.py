@@ -13,7 +13,7 @@ import torch
 
 from luke.utils.model_utils import ModelArchive
 
-from .utils.experiment_logger import commet_logger_args, CometLogger, NullLogger
+from examples.utils.experiment_logger import commet_logger_args, CometLogger, NullLogger
 
 LOG_FORMAT = "[%(asctime)s] [%(levelname)s] %(message)s (%(funcName)s@%(filename)s:%(lineno)s)"
 
