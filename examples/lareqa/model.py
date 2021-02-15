@@ -17,6 +17,7 @@ class DualEncoder(Model):
     ``LAReQA: Language-Agnostic Answer Retrieval from a Multilingual Pool``
     (https://www.aclweb.org/anthology/2020.emnlp-main.477)
     """
+
     def __init__(
         self,
         vocab: Vocabulary,
@@ -24,6 +25,7 @@ class DualEncoder(Model):
         criterion: EmbeddingSimilarityLoss,
         evaluate_top_k: int = 1,
         use_similarity_scale: bool = True,
+        normalize_embeddings: bool = True,
     ):
         super().__init__(vocab=vocab)
 
@@ -33,10 +35,15 @@ class DualEncoder(Model):
         self.metrics = {"mAP": MeanAveragePrecision(k=evaluate_top_k)}
 
         self.similarity_scale = torch.nn.Parameter(torch.ones(1)) if use_similarity_scale else None
+        self.normalize_embeddings = normalize_embeddings
 
     def forward(self, question: TextFieldTensors, answer: TextFieldTensors, ids: List[str], **kwargs):
         question_embeddings = self.encoder(question)
         answer_embeddings = self.encoder(answer)
+
+        if self.normalize_embeddings:
+            question_embeddings = question_embeddings / torch.norm(question_embeddings, dim=1, keepdim=True)
+            answer_embeddings = answer_embeddings / torch.norm(answer_embeddings, dim=1, keepdim=True)
 
         similarity_matrix = torch.mm(question_embeddings, answer_embeddings.transpose(0, 1))
 
