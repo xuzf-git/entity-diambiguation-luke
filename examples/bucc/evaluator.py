@@ -50,6 +50,13 @@ class LukeEvaluatorBUCC(ValidationEvaluator):
         retriever: str,
     ):
 
+        if not dataset_reader.manual_distributed_sharding:
+            raise ValueError("Only validation with a single GPU is currently supported,"
+                             "and we have to ensure the data is loaded as in a single process "
+                             "even with multi-GPU training."
+                             "Please set ``manual_distributed_sharding`` True to prevent loading validation data "
+                             "in a distributed way.")
+
         data_loader_params = Params(data_loader_params)
         self.source_data_loader = DataLoader.from_params(
             reader=dataset_reader, data_path=source_data_path, params=data_loader_params.duplicate()
