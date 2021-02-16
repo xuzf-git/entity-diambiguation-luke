@@ -15,7 +15,7 @@ pyjnius = {version = "*", optional = true}
 python = "^3.6.1"
 sentencepiece = "*"
 seqeval = "*"
-tensorflow = "*"
+tensorflow = "1.15.3"
 torch = "*"
 tqdm = "*"
 transformers = "^4.2.2"
