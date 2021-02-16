@@ -49,17 +49,21 @@ class LukeEvaluatorBUCC(ValidationEvaluator):
         scoring_function: str,
         retriever: str,
     ):
-        source_dataset = dataset_reader.read(source_data_path)
-        target_dataset = dataset_reader.read(target_data_path)
-
-        vocab = Vocabulary.from_instances(source_dataset)
-        vocab.extend_from_instances(target_dataset)
-        source_dataset.index_with(vocab)
-        target_dataset.index_with(vocab)
 
         data_loader_params = Params(data_loader_params)
-        self.source_data_loader = DataLoader.from_params(dataset=source_dataset, params=data_loader_params.duplicate())
-        self.target_data_loader = DataLoader.from_params(dataset=target_dataset, params=data_loader_params.duplicate())
+        self.source_data_loader = DataLoader.from_params(
+            reader=dataset_reader, data_path=source_data_path, params=data_loader_params.duplicate()
+        )
+        self.target_data_loader = DataLoader.from_params(
+            reader=dataset_reader, data_path=target_data_path, params=data_loader_params.duplicate()
+        )
+
+        vocab = Vocabulary.from_instances(self.source_data_loader.iter_instances())
+        vocab.extend_from_instances(self.target_data_loader.iter_instances())
+
+        self.source_data_loader.index_with(vocab)
+        self.target_data_loader.index_with(vocab)
+
         self.gold_indices = [idx_pair for idx_pair in parse_bucc_file(gold_data_path)]
 
         self.scoring_function = ScoringFunction.by_name(scoring_function)()
