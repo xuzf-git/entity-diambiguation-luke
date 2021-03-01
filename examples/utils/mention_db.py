@@ -1,3 +1,4 @@
+from typing import List, Union
 import logging
 from collections import defaultdict, Counter
 from contextlib import closing
@@ -54,7 +55,9 @@ def build_from_p_e_m_file(p_e_m_file, dump_db_file, wiki_mention_db_file, **kwar
 class Mention(object):
     __slots__ = ("title", "text", "start", "end", "link_count", "total_link_count", "doc_count")
 
-    def __init__(self, title, text, start, end, link_count, total_link_count, doc_count):
+    def __init__(
+        self, title: str, text: str, start: int, end: int, link_count: int, total_link_count: int, doc_count: int
+    ):
         self.title = title
         self.text = text
         self.start = start
@@ -102,7 +105,7 @@ _dump_db = _tokenizer = _normalizer = _max_mention_length = _name_trie = None
 
 
 class MentionDB(object):
-    def __init__(self, mention_db_file):
+    def __init__(self, mention_db_file: str):
         self.mention_db_file = mention_db_file
 
         data = joblib.load(mention_db_file)
@@ -116,7 +119,7 @@ class MentionDB(object):
     def __reduce__(self):
         return (self.__class__, (self.mention_db_file,))
 
-    def query(self, text_or_tokens):
+    def query(self, text_or_tokens: Union[str, List[str]]):
         if isinstance(text_or_tokens, str):
             tokens = self._tokenizer.tokenize(text_or_tokens)
         else:
@@ -131,7 +134,7 @@ class MentionDB(object):
         except KeyError:
             return []
 
-    def save(self, out_file):
+    def save(self, out_file: str):
         joblib.dump(
             dict(
                 title_trie=self._title_trie,
