@@ -131,5 +131,9 @@ from examples.entity_span_qa.main import cli as entity_span_qa_cli
 
 cli.add_command(entity_span_qa_cli)
 
+from examples.utils.entity_db import cli as entity_db_cli
+
+cli.add_command(entity_db_cli)
+
 if __name__ == "__main__":
     cli()
