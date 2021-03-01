@@ -71,7 +71,7 @@ class WikiMentionDetector:
             del mention_candidates[link_text]
         return mention_candidates
 
-    def detect_mentions(self, tokens: List[str], mention_candidates: Dict[str, str]) -> List[Mention]:
+    def detect_mentions(self, tokens: List[str], mention_candidates: Dict[str, str], language: str) -> List[Mention]:
         mentions = []
         cur = 0
         for start, token in enumerate(tokens):
@@ -86,7 +86,7 @@ class WikiMentionDetector:
                     cur = end
                     title = mention_candidates[mention_text]
                     title = self.model_redirect_mappings.get(title, title)  # resolve mismatch between two dumps
-                    if title in self.entity_vocab:
+                    if self.entity_vocab.contains(title, language):
                         mention = Mention(self.entity_vocab[title], start, end)
                         mentions.append(mention)
                     break
@@ -97,14 +97,18 @@ class WikiMentionDetector:
         en_mention_candidates = self.get_mention_candidates(title)
         en_entities = list(en_mention_candidates.values())
 
-        target_entities = [self.inter_wiki_db.get_title_translation(ent, "en", language) for ent in en_entities]
+        target_entities = []
+        for ent in en_entities:
+            translated_ent = self.inter_wiki_db.get_title_translation(ent, "en", language)
+            if translated_ent is not None:
+                target_entities.append(translated_ent)
 
         target_mention_candidates = {}
         for target_entity in target_entities:
             for entity, mention, count in self.entity_db_dict[language].query(target_entity):
                 target_mention_candidates[mention] = entity
 
-        target_mentions = self.detect_mentions(tokens, target_mention_candidates)
+        target_mentions = self.detect_mentions(tokens, target_mention_candidates, language)
 
         return target_mentions
 
