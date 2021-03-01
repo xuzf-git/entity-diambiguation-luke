@@ -1,9 +1,10 @@
 from typing import Set, Dict, List, NamedTuple
-from examples.reading_comprehension.utils.feature import convert_examples_to_features
 from examples.reading_comprehension.utils.wiki_link_db import WikiLinkDB
 import joblib
-from transformers import AutoTokenizer
+from transformers.tokenization_utils import PreTrainedTokenizer
 from luke.utils.entity_vocab import EntityVocab
+from luke.utils.interwiki_db import InterwikiDB
+from examples.utils.entity_db import EntityDB
 
 from allennlp.data import Token
 
@@ -21,21 +22,34 @@ class WikiMentionDetector:
 
     def __init__(
         self,
+        tokenizer: PreTrainedTokenizer,
         wiki_link_db_path: str,
         model_redirect_mappings_path: str,
         link_redirect_mappings_path: str,
+        inter_wiki_path: str,
+        entity_vocab_path: str,
+        multilingual_entity_db_path: Dict[str, str],
         min_mention_link_prob: float = 0.01,
-        max_mention_length: int = 10
+        max_mention_length: int = 10,
     ):
+        self.tokenizer = tokenizer
         self.wiki_link_db = WikiLinkDB(wiki_link_db_path)
-        self.model_redirect_mappings = joblib.load(model_redirect_mappings_path)
-        self.link_redirect_mappings = joblib.load(link_redirect_mappings_path)
+        self.model_redirect_mappings: Dict[str, str] = joblib.load(model_redirect_mappings_path)
+        self.link_redirect_mappings: Dict[str, str] = joblib.load(link_redirect_mappings_path)
+        self.inter_wiki_db = InterwikiDB.load(inter_wiki_path)
+
+        self.entity_vocab = EntityVocab(entity_vocab_path)
+
+        self.entity_db_dict = {lang: EntityDB(path) for lang, path in multilingual_entity_db_path.items()}
 
         self.min_mention_link_prob = min_mention_link_prob
 
         self.max_mention_length = max_mention_length
 
     def get_mention_candidates(self, title: str) -> Dict[str, str]:
+        """
+        Returns a dict of [mention, entity (title)]
+        """
         title = self.link_redirect_mappings.get(title, title)
 
         if title not in self.wiki_link_db:
@@ -69,21 +83,33 @@ class WikiMentionDetector:
 
             for end in range(min(start + self.max_mention_length, len(tokens)), start, -1):
 
-                mention_text = self._tokenizer.convert_tokens_to_string(tokens[start:end])
+                mention_text = self.tokenizer.convert_tokens_to_string(tokens[start:end])
                 mention_text = self._normalize_mention(mention_text)
                 if mention_text in mention_candidates:
                     cur = end
                     title = mention_candidates[mention_text]
                     title = self.model_redirect_mappings.get(title, title)  # resolve mismatch between two dumps
-                    if title in self._entity_vocab:
-                        mention = Mention(self._entity_vocab[title], start, end)
+                    if title in self.entity_vocab:
+                        mention = Mention(self.entity_vocab[title], start, end)
                         mentions.append(mention)
                     break
 
         return mentions
 
-    def __call__(self, tokens: List[Token], title: str):
-        pass
+    def __call__(self, tokens: List[Token], title: str, language: str):
+        en_mention_candidates = self.get_mention_candidates(title)
+        en_entities = list(en_mention_candidates.values())
+
+        target_entities = [self.inter_wiki_db.get_title_translation(ent, "en", language) for ent in en_entities]
+
+        target_mention_candidates = {}
+        for target_entity in target_entities:
+            for entity, mention, count in self.entity_db_dict[language].query(target_entity):
+                target_mention_candidates[mention] = entity
+
+        target_mentions = self.detect_mentions(tokens, target_mention_candidates)
+
+        return target_mentions
 
     @staticmethod
     def _normalize_mention(text: str):
