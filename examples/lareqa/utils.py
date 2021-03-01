@@ -52,9 +52,6 @@ class WikiMentionDetector:
         """
         title = self.link_redirect_mappings.get(title, title)
 
-        if title not in self.wiki_link_db:
-            return {}
-
         # mention_to_entity
         mention_candidates: Dict[str, str] = {}
         ambiguous_mentions: Set[str] = set()
