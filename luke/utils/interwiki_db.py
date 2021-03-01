@@ -53,6 +53,14 @@ class InterwikiDB(object):
         except KeyError:
             return []
 
+    def get_title_translation(self, title: str, source_language: str, target_language: str) -> str:
+        target_title = [title for title, lang in self.query(title, source_language) if lang == target_language]
+
+        if len(target_title) > 0:
+            return target_title[0]
+        else:
+            return None
+
     @staticmethod
     def build(wiki_data_file: str, target_languages: List[str] = None):
         data = []
