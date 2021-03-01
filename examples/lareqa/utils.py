@@ -87,7 +87,7 @@ class WikiMentionDetector:
                     title = mention_candidates[mention_text]
                     title = self.model_redirect_mappings.get(title, title)  # resolve mismatch between two dumps
                     if self.entity_vocab.contains(title, language):
-                        mention = Mention(self.entity_vocab[title], start, end)
+                        mention = Mention(title, start, end)
                         mentions.append(mention)
                     break
 
