@@ -27,7 +27,9 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         )
 
         self.luke_model = LukeModel(config)
-        self.luke_model.load_state_dict(torch.load(pretrained_weight_path), strict=False)
+        self.luke_model.load_state_dict(
+            torch.load(pretrained_weight_path, map_location=torch.device("cpu")), strict=False
+        )
 
         if not train_parameters:
             for param in self.transformer_model.parameters():
