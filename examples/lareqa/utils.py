@@ -2,7 +2,7 @@ from typing import Set, Dict, List, NamedTuple
 from examples.reading_comprehension.utils.wiki_link_db import WikiLinkDB
 import joblib
 from transformers.tokenization_utils import PreTrainedTokenizer
-from luke.utils.entity_vocab import EntityVocab
+from luke.utils.entity_vocab import EntityVocab, Entity
 from luke.utils.interwiki_db import InterwikiDB
 from examples.utils.entity_db import EntityDB
 
@@ -11,7 +11,7 @@ from allennlp.common import FromParams
 
 
 class Mention(NamedTuple):
-    entity: str
+    entity: Entity
     start: int
     end: int
 
@@ -90,7 +90,7 @@ class WikiMentionDetector(FromParams):
                     title = mention_candidates[mention_text]
                     title = self.model_redirect_mappings.get(title, title)  # resolve mismatch between two dumps
                     if self.entity_vocab.contains(title, language):
-                        mention = Mention(title, start, end)
+                        mention = Mention(Entity(title, language), start, end)
                         mentions.append(mention)
                     break
 
@@ -127,7 +127,7 @@ class WikiMentionDetector(FromParams):
     def _normalize_mention(text: str):
         return " ".join(text.lower().split(" ")).strip()
 
-    def mentions_to_entity_features(self, tokens: List[Token], mentions: List[Mention]) -> Dict:
+    def mentions_to_entity_features(self, tokens: List[Token], mentions: List[Mention], language: str) -> Dict:
 
         if len(mentions) == 0:
             entity_ids = [-1]
@@ -140,8 +140,8 @@ class WikiMentionDetector(FromParams):
             entity_attention_mask = [1] * len(mentions)
             entity_position_ids = [[-1 for y in range(self.max_mention_length)] for x in range(len(mentions))]
 
-            for i, (entity_id, start, end) in enumerate(mentions):
-                entity_ids[i] = entity_id
+            for i, (entity, start, end) in enumerate(mentions):
+                entity_ids[i] = self.entity_vocab.get_id(entity.title, entity.language)
                 entity_position_ids[i][: end - start] = range(start, end)
 
                 if tokens[start].type_id is not None:
