@@ -24,9 +24,9 @@ class LAReQAParser:
         for article in data["data"]:
             for paragraph in article["paragraphs"]:
                 if self.mode == "lareqa":
-                    yield from self.parse_lareqa_paragraph(paragraph)
+                    yield from self.parse_lareqa_paragraph(paragraph, title=article["title"])
                 elif self.mode == "squad":
-                    yield from self.parse_squad_paragraph(paragraph)
+                    yield from self.parse_squad_paragraph(paragraph, title=article["title"])
                 else:
                     raise ValueError(f"self.mode = {self.mode}")
 
@@ -39,7 +39,7 @@ class LAReQAParser:
             if span_start <= start_index <= span_end:
                 return index
 
-    def parse_lareqa_paragraph(self, paragraph: Dict):
+    def parse_lareqa_paragraph(self, paragraph: Dict, title: str = None):
 
         for q in paragraph["qas"]:
             for answer in q["answers"]:
@@ -49,9 +49,10 @@ class LAReQAParser:
                     "answer": paragraph["sentences"][sentence_index],
                     "context_paragraph": paragraph["sentences"],
                     "idx": q["id"],
+                    "title": title,
                 }
 
-    def parse_squad_paragraph(self, paragraph: Dict):
+    def parse_squad_paragraph(self, paragraph: Dict, title: str = None):
         sentence_breaks = self.sentence_splitter.span_tokenize(paragraph["context"])
         sentences = [paragraph["context"][s:e] for s, e in sentence_breaks]
         for q in paragraph["qas"]:
@@ -62,6 +63,7 @@ class LAReQAParser:
                     "answer": sentences[sentence_index],
                     "context_paragraph": sentences,
                     "idx": q["id"],
+                    "title": title,
                 }
 
 
