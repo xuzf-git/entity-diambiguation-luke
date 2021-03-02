@@ -89,7 +89,9 @@ class LAReQAReader(DatasetReader):
 
         self.wiki_mention_detector = wiki_mention_detector
         if self.wiki_mention_detector is not None:
-            self.wiki_mention_detector.set_tokenizer(tokenizer)
+            if not isinstance(tokenizer, PretrainedTransformerTokenizer):
+                raise ValueError("WikiMentionDetector is only compatible with PretrainedTransformerTokenizer.")
+            self.wiki_mention_detector.set_tokenizer(tokenizer.tokenizer)
 
     def text_to_instance(
         self, question: str, answer: str, context_paragraph: List[str], idx: str, title: str, language: str = None
@@ -138,13 +140,11 @@ class LAReQAReader(DatasetReader):
 
         for file_path in file_path_list:
 
-            if self.mode == "lareqa":
+            if self.parser.mode == "lareqa":
                 # we asusme the filename is like "en.json"
                 language = Path(file_path).stem
-            elif self.mode == "squad":
+            elif self.parser.mode == "squad":
                 language = "en"
-            else:
-                raise RuntimeError(f"Invalid model: {self.mode}")
 
             for question_answer_pair in self.parser(file_path):
                 instance = self.text_to_instance(**question_answer_pair, language=language)
