@@ -37,7 +37,34 @@ class DualEncoder(Model):
         self.similarity_scale = torch.nn.Parameter(torch.ones(1)) if use_similarity_scale else None
         self.normalize_embeddings = normalize_embeddings
 
-    def forward(self, question: TextFieldTensors, answer: TextFieldTensors, ids: List[str], **kwargs):
+    def forward(
+        self,
+        question: TextFieldTensors,
+        answer: TextFieldTensors,
+        ids: List[str],
+        question_entity_ids: torch.LongTensor = None,
+        question_entity_position_ids: torch.LongTensor = None,
+        question_entity_segment_ids: torch.LongTensor = None,
+        question_entity_attention_mask: torch.LongTensor = None,
+        answer_entity_ids: torch.LongTensor = None,
+        answer_entity_position_ids: torch.LongTensor = None,
+        answer_entity_segment_ids: torch.LongTensor = None,
+        answer_entity_attention_mask: torch.LongTensor = None,
+        **kwargs
+    ):
+
+        if question_entity_ids is not None:
+            question["entity_ids"] = question_entity_ids
+            question["entity_position_ids"] = question_entity_position_ids
+            question["entity_segment_ids"] = question_entity_segment_ids
+            question["entity_attention_mask"] = question_entity_attention_mask
+
+        if answer_entity_ids is not None:
+            answer["entity_ids"] = answer_entity_ids
+            answer["entity_position_ids"] = answer_entity_position_ids
+            answer["entity_segment_ids"] = answer_entity_segment_ids
+            answer["entity_attention_mask"] = answer_entity_attention_mask
+
         question_embeddings = self.encoder(question)
         answer_embeddings = self.encoder(answer)
 

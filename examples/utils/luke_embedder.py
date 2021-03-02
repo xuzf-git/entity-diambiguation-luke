@@ -39,9 +39,24 @@ class PretrainedLukeEmbedder(TokenEmbedder):
 
     @overrides
     def forward(
-        self, token_ids: torch.LongTensor, mask: torch.BoolTensor, type_ids: Optional[torch.LongTensor] = None,
+        self,
+        token_ids: torch.LongTensor,
+        mask: torch.BoolTensor,
+        type_ids: Optional[torch.LongTensor] = None,
+        entity_ids: torch.LongTensor = None,
+        entity_position_ids: torch.LongTensor = None,
+        entity_segment_ids: torch.LongTensor = None,
+        entity_attention_mask: torch.LongTensor = None,
     ) -> torch.Tensor:  # type: ignore
 
-        sequence_output = self.luke_model(token_ids, word_segment_ids=type_ids, word_attention_mask=mask)[0]
+        sequence_output = self.luke_model(
+            token_ids,
+            word_segment_ids=type_ids,
+            word_attention_mask=mask,
+            entity_ids=entity_ids,
+            entity_position_ids=entity_position_ids,
+            entity_segment_ids=entity_segment_ids,
+            entity_attention_mask=entity_attention_mask,
+        )[0]
 
         return sequence_output

@@ -28,7 +28,7 @@ class WikiMentionDetector(FromParams):
         link_redirect_mappings_path: str,
         inter_wiki_path: str,
         entity_vocab_path: str,
-        multilingual_entity_db_path: Dict[str, str],
+        multilingual_entity_db_path: Dict[str, str] = None,
         min_mention_link_prob: float = 0.01,
         max_mention_length: int = 10,
     ):
@@ -40,6 +40,7 @@ class WikiMentionDetector(FromParams):
 
         self.entity_vocab = EntityVocab(entity_vocab_path)
 
+        multilingual_entity_db_path = multilingual_entity_db_path or {}
         self.entity_db_dict = {lang: EntityDB(path) for lang, path in multilingual_entity_db_path.items()}
 
         self.min_mention_link_prob = min_mention_link_prob
