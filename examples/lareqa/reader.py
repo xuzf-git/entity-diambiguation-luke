@@ -2,10 +2,12 @@ from typing import Dict, List, Tuple
 import json
 import itertools
 import glob
+from pathlib import Path
+import numpy as np
 
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
-from allennlp.data import DatasetReader, Instance, Tokenizer, TokenIndexer
-from allennlp.data.fields import MetadataField, TextField
+from allennlp.data import DatasetReader, Instance, Tokenizer, TokenIndexer, Token
+from allennlp.data.fields import MetadataField, TextField, ArrayField
 
 from luke.utils.sentence_tokenizer import SentenceTokenizer, ICUSentenceTokenizer
 
@@ -89,7 +91,9 @@ class LAReQAReader(DatasetReader):
         if self.wiki_mention_detector is not None:
             self.wiki_mention_detector.set_tokenizer(tokenizer)
 
-    def text_to_instance(self, question: str, answer: str, context_paragraph: List[str], idx: str) -> Instance:
+    def text_to_instance(
+        self, question: str, answer: str, context_paragraph: List[str], idx: str, title: str, language: str = None
+    ) -> Instance:
         question_tokens = self.tokenizer.tokenize(question)
         answer_tokens = self.tokenizer.tokenize(answer)
 
@@ -104,13 +108,27 @@ class LAReQAReader(DatasetReader):
         for token in context_tokens:
             token.type_id = 1
 
+        answer_context_tokens = answer_tokens + context_tokens
         fields = {
             "question": TextField(question_tokens, self.token_indexers),
-            "answer": TextField(answer_tokens + context_tokens, self.token_indexers),
+            "answer": TextField(answer_context_tokens, self.token_indexers),
             "ids": MetadataField(idx),
         }
 
+        if self.wiki_mention_detector is not None:
+            fields.update(self.get_entity_features(answer_context_tokens, title, language=language))
+
         return Instance(fields)
+
+    def get_entity_features(self, tokens: List[Token], title: str, language: str):
+        assert language is not None
+        mentions = self.wiki_mention_detector.detect_mentions(tokens, title, language)
+        entity_features = self.wiki_mention_detector.mentions_to_entity_features(tokens, mentions)
+
+        entity_feature_fields = {}
+        for name, feature in entity_features.items():
+            entity_feature_fields[name] = ArrayField(np.ndarray(entity_feature_fields), padding_value=-1)
+        return entity_feature_fields
 
     def _read(self, file_path: str):
         file_path_list = glob.glob(file_path)
@@ -119,8 +137,17 @@ class LAReQAReader(DatasetReader):
             raise ValueError(f"``{file_path}`` matches no file.")
 
         for file_path in file_path_list:
+
+            if self.mode == "lareqa":
+                # we asusme the filename is like "en.json"
+                language = Path(file_path).stem
+            elif self.mode == "squad":
+                language = "en"
+            else:
+                raise RuntimeError(f"Invalid model: {self.mode}")
+
             for question_answer_pair in self.parser(file_path):
-                instance = self.text_to_instance(**question_answer_pair)
+                instance = self.text_to_instance(**question_answer_pair, language=language)
 
                 if (
                     len(instance["answer"]) > self.max_sequence_length

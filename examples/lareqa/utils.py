@@ -74,7 +74,7 @@ class WikiMentionDetector(FromParams):
             del mention_candidates[link_text]
         return mention_candidates
 
-    def detect_mentions(self, tokens: List[str], mention_candidates: Dict[str, str], language: str) -> List[Mention]:
+    def _detect_mentions(self, tokens: List[str], mention_candidates: Dict[str, str], language: str) -> List[Mention]:
         mentions = []
         cur = 0
         for start, token in enumerate(tokens):
@@ -96,29 +96,53 @@ class WikiMentionDetector(FromParams):
 
         return mentions
 
-    def __call__(self, tokens: List[Token], title: str, language: str):
+    def detect_mentions(self, tokens: List[Token], title: str, language: str) -> List[Mention]:
 
         if self.tokenizer is None:
             raise RuntimeError("self.tokenizer is None. Did you call self.set_tokenizer()?")
 
         en_mention_candidates = self.get_mention_candidates(title)
-        en_entities = list(en_mention_candidates.values())
 
-        target_entities = []
-        for ent in en_entities:
-            translated_ent = self.inter_wiki_db.get_title_translation(ent, "en", language)
-            if translated_ent is not None:
-                target_entities.append(translated_ent)
+        if language == "en":
+            target_mention_candidates = en_mention_candidates
+        else:
+            en_entities = list(en_mention_candidates.values())
 
-        target_mention_candidates = {}
-        for target_entity in target_entities:
-            for entity, mention, count in self.entity_db_dict[language].query(target_entity):
-                target_mention_candidates[mention] = entity
+            target_entities = []
+            for ent in en_entities:
+                translated_ent = self.inter_wiki_db.get_title_translation(ent, "en", language)
+                if translated_ent is not None:
+                    target_entities.append(translated_ent)
 
-        target_mentions = self.detect_mentions(tokens, target_mention_candidates, language)
+            target_mention_candidates = {}
+            for target_entity in target_entities:
+                for entity, mention, count in self.entity_db_dict[language].query(target_entity):
+                    target_mention_candidates[mention] = entity
+
+        target_mentions = self._detect_mentions(tokens, target_mention_candidates, language)
 
         return target_mentions
 
     @staticmethod
     def _normalize_mention(text: str):
         return " ".join(text.lower().split(" ")).strip()
+
+    def mentions_to_entity_features(self, tokens: List[Token], mentions: List[Mention]) -> Dict:
+        entity_ids = [0] * len(mentions)
+        entity_type_ids = [0] * len(mentions)
+        entity_attention_mask = [1] * len(mentions)
+        entity_position_ids = [[-1 for y in range(self.max_mention_length)] for x in range(len(mentions))]
+
+        for i, (entity_id, start, end) in enumerate(mentions):
+            entity_ids[i] = entity_id
+            entity_position_ids[i][: end - start] = range(start, end)
+
+            if tokens[start].type_id is not None:
+                entity_type_ids[i] = tokens[start].type_id
+
+        return {
+            "entity_ids": entity_ids,
+            "entity_attention_mask": entity_attention_mask,
+            "entity_position_ids": entity_position_ids,
+            "entity_type_ids": entity_type_ids
+        }
