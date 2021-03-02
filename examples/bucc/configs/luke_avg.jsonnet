@@ -1,13 +1,15 @@
-local model_size = std.parseInt(std.extVar("model_size"));
 local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
 
-local model_name = "pvl/labse_bert";
+local bert_model_name = std.extVar("BERT_MODEL_NAME");
+local pretrained_weight_path = std.extVar("PRETRAINED_WEIGHT_PATH");
+local pretrained_metadata_path = std.extVar("PRETRAINED_METADATA_PATH");
+
 {
     "dataset_reader": {
        "type": "bucc",
-       "tokenizer": {"type": "pretrained_transformer", "model_name": model_name},
+       "tokenizer": {"type": "pretrained_transformer", "model_name": bert_model_name},
        "token_indexers": {"tokens": {"type": "pretrained_transformer",
-                                     "model_name": model_name}},
+                                     "model_name": bert_model_name}},
     },
     "vocabulary": {},
     "data_loader": {
@@ -19,8 +21,9 @@ local model_name = "pvl/labse_bert";
             "type": "basic",
             "token_embedders": {
                 "tokens": {
-                    "type": "pretrained_transformer",
-                    "model_name": model_name
+                    "type": "luke",
+                    "pretrained_weight_path": pretrained_weight_path,
+                    "pretrained_metadata_path": pretrained_metadata_path
                 }
             }
         },

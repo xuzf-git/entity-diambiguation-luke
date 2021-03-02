@@ -9,6 +9,8 @@ from allennlp.data.fields import MetadataField, TextField
 
 from luke.utils.sentence_tokenizer import SentenceTokenizer, ICUSentenceTokenizer
 
+from .utils import WikiMentionDetector
+
 
 class LAReQAParser:
     def __init__(self, mode: str = "lareqa", sentence_splitter: SentenceTokenizer = None):
@@ -71,6 +73,7 @@ class LAReQAReader(DatasetReader):
         token_indexers: Dict[str, TokenIndexer],
         mode: str = "lareqa",
         max_sequence_length: int = 512,
+        wiki_mention_detector: WikiMentionDetector = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -79,6 +82,10 @@ class LAReQAReader(DatasetReader):
         self.parser = LAReQAParser(mode=mode)
 
         self.max_sequence_length = max_sequence_length
+
+        self.wiki_mention_detector = wiki_mention_detector
+        if self.wiki_mention_detector is not None:
+            self.wiki_mention_detector.set_tokenizer(tokenizer)
 
     def text_to_instance(self, question: str, answer: str, context_paragraph: List[str], idx: str) -> Instance:
         question_tokens = self.tokenizer.tokenize(question)

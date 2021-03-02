@@ -7,6 +7,7 @@ from luke.utils.interwiki_db import InterwikiDB
 from examples.utils.entity_db import EntityDB
 
 from allennlp.data import Token
+from allennlp.common import FromParams
 
 
 class Mention(NamedTuple):
@@ -15,14 +16,13 @@ class Mention(NamedTuple):
     end: int
 
 
-class WikiMentionDetector:
+class WikiMentionDetector(FromParams):
     """
     Detect entity mentions in text from Wikipedia articles.
     """
 
     def __init__(
         self,
-        tokenizer: PreTrainedTokenizer,
         wiki_link_db_path: str,
         model_redirect_mappings_path: str,
         link_redirect_mappings_path: str,
@@ -32,7 +32,7 @@ class WikiMentionDetector:
         min_mention_link_prob: float = 0.01,
         max_mention_length: int = 10,
     ):
-        self.tokenizer = tokenizer
+        self.tokenizer = None
         self.wiki_link_db = WikiLinkDB(wiki_link_db_path)
         self.model_redirect_mappings: Dict[str, str] = joblib.load(model_redirect_mappings_path)
         self.link_redirect_mappings: Dict[str, str] = joblib.load(link_redirect_mappings_path)
@@ -45,6 +45,9 @@ class WikiMentionDetector:
         self.min_mention_link_prob = min_mention_link_prob
 
         self.max_mention_length = max_mention_length
+
+    def set_tokenizer(self, tokenizer: PreTrainedTokenizer):
+        self.tokenizer = tokenizer
 
     def get_mention_candidates(self, title: str) -> Dict[str, str]:
         """
@@ -94,6 +97,10 @@ class WikiMentionDetector:
         return mentions
 
     def __call__(self, tokens: List[Token], title: str, language: str):
+
+        if self.tokenizer is None:
+            raise RuntimeError("self.tokenizer is None. Did you call self.set_tokenizer()?")
+
         en_mention_candidates = self.get_mention_candidates(title)
         en_entities = list(en_mention_candidates.values())
 

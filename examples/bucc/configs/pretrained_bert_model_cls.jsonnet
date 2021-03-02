@@ -1,7 +1,6 @@
-local model_size = std.parseInt(std.extVar("model_size"));
 local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
+local model_name = std.extVar("BERT_MODEL_NAME");
 
-local model_name = "xlm-roberta-base";
 {
     "dataset_reader": {
        "type": "bucc",
@@ -14,7 +13,7 @@ local model_name = "xlm-roberta-base";
         "batch_sampler": {"type": "max_tokens_sampler", "max_tokens": batch_size, "padding_noise": 0.0}
     },
     "model": {
-        "type": "boe",
+        "type": "first_token",
         "embedder": {
             "type": "basic",
             "token_embedders": {
@@ -24,6 +23,5 @@ local model_name = "xlm-roberta-base";
                 }
             }
         },
-        "averaged": true
     }
 }

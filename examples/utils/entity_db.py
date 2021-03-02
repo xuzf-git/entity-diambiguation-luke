@@ -98,7 +98,7 @@ class EntityDB(object):
         pool_size,
         chunk_size,
     ):
-        logger.info("Iteration 1/2: Extracting all entity names...")
+        logger.info("Extracting all entity names...")
 
         title_dict = defaultdict(Counter)
         with tqdm(total=dump_db.page_size(), mininterval=0.5) as pbar:
