@@ -128,17 +128,24 @@ class WikiMentionDetector(FromParams):
         return " ".join(text.lower().split(" ")).strip()
 
     def mentions_to_entity_features(self, tokens: List[Token], mentions: List[Mention]) -> Dict:
-        entity_ids = [0] * len(mentions)
-        entity_type_ids = [0] * len(mentions)
-        entity_attention_mask = [1] * len(mentions)
-        entity_position_ids = [[-1 for y in range(self.max_mention_length)] for x in range(len(mentions))]
 
-        for i, (entity_id, start, end) in enumerate(mentions):
-            entity_ids[i] = entity_id
-            entity_position_ids[i][: end - start] = range(start, end)
+        if len(mentions) == 0:
+            entity_ids = [-1]
+            entity_type_ids = [0]
+            entity_attention_mask = [0]
+            entity_position_ids = [[-1 for y in range(self.max_mention_length)]]
+        else:
+            entity_ids = [0] * len(mentions)
+            entity_type_ids = [0] * len(mentions)
+            entity_attention_mask = [1] * len(mentions)
+            entity_position_ids = [[-1 for y in range(self.max_mention_length)] for x in range(len(mentions))]
 
-            if tokens[start].type_id is not None:
-                entity_type_ids[i] = tokens[start].type_id
+            for i, (entity_id, start, end) in enumerate(mentions):
+                entity_ids[i] = entity_id
+                entity_position_ids[i][: end - start] = range(start, end)
+
+                if tokens[start].type_id is not None:
+                    entity_type_ids[i] = tokens[start].type_id
 
         return {
             "entity_ids": entity_ids,
