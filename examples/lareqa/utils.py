@@ -119,7 +119,7 @@ class WikiMentionDetector(FromParams):
                 for entity, mention, count in self.entity_db_dict[language].query(target_entity):
                     target_mention_candidates[mention] = entity
 
-        target_mentions = self._detect_mentions(tokens, target_mention_candidates, language)
+        target_mentions = self._detect_mentions([t.text for t in tokens], target_mention_candidates, language)
 
         return target_mentions
 
@@ -144,5 +144,5 @@ class WikiMentionDetector(FromParams):
             "entity_ids": entity_ids,
             "entity_attention_mask": entity_attention_mask,
             "entity_position_ids": entity_position_ids,
-            "entity_type_ids": entity_type_ids
+            "entity_type_ids": entity_type_ids,
         }
