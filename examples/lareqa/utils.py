@@ -127,7 +127,7 @@ class WikiMentionDetector(FromParams):
     def _normalize_mention(text: str):
         return " ".join(text.lower().split(" ")).strip()
 
-    def mentions_to_entity_features(self, tokens: List[Token], mentions: List[Mention], language: str) -> Dict:
+    def mentions_to_entity_features(self, tokens: List[Token], mentions: List[Mention]) -> Dict:
 
         if len(mentions) == 0:
             entity_ids = [-1]
