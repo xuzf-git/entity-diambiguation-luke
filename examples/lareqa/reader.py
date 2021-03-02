@@ -129,7 +129,7 @@ class LAReQAReader(DatasetReader):
 
         entity_feature_fields = {}
         for name, feature in entity_features.items():
-            entity_feature_fields[name] = ArrayField(np.ndarray(entity_feature_fields), padding_value=-1)
+            entity_feature_fields[name] = ArrayField(np.array(feature), padding_value=-1)
         return entity_feature_fields
 
     def _read(self, file_path: str):
