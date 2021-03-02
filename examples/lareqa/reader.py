@@ -78,6 +78,7 @@ class LAReQAReader(DatasetReader):
         mode: str = "lareqa",
         max_sequence_length: int = 512,
         wiki_mention_detector: WikiMentionDetector = None,
+        enable_type_ids: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -93,6 +94,8 @@ class LAReQAReader(DatasetReader):
                 raise ValueError("WikiMentionDetector is only compatible with PretrainedTransformerTokenizer.")
             self.wiki_mention_detector.set_tokenizer(tokenizer.tokenizer)
 
+        self.enable_type_ids = enable_type_ids
+
     def text_to_instance(
         self, question: str, answer: str, context_paragraph: List[str], idx: str, title: str, language: str = None
     ) -> Instance:
@@ -107,8 +110,10 @@ class LAReQAReader(DatasetReader):
             context_tokens[-1].append(answer_tokens[-1])
 
         context_tokens = list(itertools.chain(*context_tokens))
-        for token in context_tokens:
-            token.type_id = 1
+
+        if self.enable_type_ids:
+            for token in context_tokens:
+                token.type_id = 1
 
         answer_context_tokens = answer_tokens + context_tokens
         fields = {
