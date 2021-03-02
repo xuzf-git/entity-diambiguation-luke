@@ -118,7 +118,11 @@ class LAReQAReader(DatasetReader):
         }
 
         if self.wiki_mention_detector is not None:
-            fields.update(self.get_entity_features(answer_context_tokens, title, language=language))
+            answer_entity_fields = self.get_entity_features(answer_context_tokens, title, language=language)
+            fields.update({"answer_" + k: v for k, v in answer_entity_fields.items()})
+
+            question_entity_fields = self.get_entity_features(question_tokens, title, language=language)
+            fields.update({"question_" + k: v for k, v in question_entity_fields.items()})
 
         return Instance(fields)
 
