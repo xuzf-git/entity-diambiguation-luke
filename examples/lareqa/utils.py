@@ -131,7 +131,7 @@ class WikiMentionDetector(FromParams):
     def mentions_to_entity_features(self, tokens: List[Token], mentions: List[Mention]) -> Dict:
 
         if len(mentions) == 0:
-            entity_ids = [-1]
+            entity_ids = [0]
             entity_type_ids = [0]
             entity_attention_mask = [0]
             entity_position_ids = [[-1 for y in range(self.max_mention_length)]]
