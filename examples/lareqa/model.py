@@ -54,16 +54,16 @@ class DualEncoder(Model):
     ):
 
         if question_entity_ids is not None:
-            question["entity_ids"] = question_entity_ids
-            question["entity_position_ids"] = question_entity_position_ids
-            question["entity_segment_ids"] = question_entity_segment_ids
-            question["entity_attention_mask"] = question_entity_attention_mask
+            question["tokens"]["entity_ids"] = question_entity_ids
+            question["tokens"]["entity_position_ids"] = question_entity_position_ids
+            question["tokens"]["entity_segment_ids"] = question_entity_segment_ids
+            question["tokens"]["entity_attention_mask"] = question_entity_attention_mask
 
         if answer_entity_ids is not None:
-            answer["entity_ids"] = answer_entity_ids
-            answer["entity_position_ids"] = answer_entity_position_ids
-            answer["entity_segment_ids"] = answer_entity_segment_ids
-            answer["entity_attention_mask"] = answer_entity_attention_mask
+            answer["tokens"]["entity_ids"] = answer_entity_ids
+            answer["tokens"]["entity_position_ids"] = answer_entity_position_ids
+            answer["tokens"]["entity_segment_ids"] = answer_entity_segment_ids
+            answer["tokens"]["entity_attention_mask"] = answer_entity_attention_mask
 
         question_embeddings = self.encoder(question)
         answer_embeddings = self.encoder(answer)
