@@ -51,7 +51,9 @@ base + {
        "type": "lareqa",
        "mode": "lareqa",
        "tokenizer": tokenizer,
-       "token_indexers": token_indexers},
+       "token_indexers": token_indexers,
+       "wiki_mention_detector": multilingual_mention_detector
+       },
     "model": {
         "type": "dual_encoder_retrieval",
         "encoder": {
