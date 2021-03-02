@@ -42,13 +42,6 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         self, token_ids: torch.LongTensor, mask: torch.BoolTensor, type_ids: Optional[torch.LongTensor] = None,
     ) -> torch.Tensor:  # type: ignore
 
-        embedding_output = self.luke_model.embeddings(token_ids, type_ids)
-
-        attention_mask = self.luke_model._compute_extended_attention_mask(mask, entity_attention_mask=None)
-        encoder_outputs = self.luke_model.encoder(
-            embedding_output, attention_mask, [None] * self.luke_model.config.num_hidden_layers
-        )
-
-        sequence_output = encoder_outputs[0]
+        sequence_output = self.luke_model(token_ids, word_segment_ids=type_ids, word_attention_mask=mask)[0]
 
         return sequence_output

@@ -98,6 +98,8 @@ def evaluate_bucc(
         device = torch.device(f"cuda:{cuda_device}")
     else:
         device = torch.device("cpu")
+    source_model.eval()
+    target_model.eval()
     source_model.to(device)
     target_model.to(device)
 
