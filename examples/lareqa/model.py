@@ -88,13 +88,14 @@ class DualEncoder(Model):
 
         # compute diagnostic metrics
         batch_size = similarity_matrix.size(0)
-        correct_similarity = similarity_matrix.detach().diag().sum()
-        incorrect_similarity = similarity_matrix.detach().sum() - correct_similarity
-
-        correct_similarity = correct_similarity / batch_size
-        incorrect_similarity = incorrect_similarity / (batch_size * (batch_size - 1))
-        self.metrics["correct_similarity"](correct_similarity)
-        self.metrics["incorrect_similarity"](incorrect_similarity)
+        num_incorrect = batch_size * (batch_size - 1)
+        if num_incorrect > 0:
+            correct_similarity = similarity_matrix.detach().diag().sum()
+            incorrect_similarity = similarity_matrix.detach().sum() - correct_similarity
+            correct_similarity = correct_similarity / batch_size
+            incorrect_similarity = incorrect_similarity / num_incorrect
+            self.metrics["correct_similarity"](correct_similarity)
+            self.metrics["incorrect_similarity"](incorrect_similarity)
 
         if not self.training:
             self.metrics["mAP"](question_embeddings, answer_embeddings, query_ids=ids, target_ids=ids)
