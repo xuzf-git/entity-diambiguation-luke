@@ -10,7 +10,7 @@ local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
     "train_data_path": train_data_path,
     "validation_data_path": validation_data_path,
     "data_loader": {
-        "batch_sampler": {"type": "bucket", "batch_size": batch_size, "padding_noise": 0.1}
+        "batch_size": batch_size, "shuffle": true
     },
     "trainer": {
         "num_epochs": 100,
