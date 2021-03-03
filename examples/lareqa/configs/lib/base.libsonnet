@@ -1,5 +1,6 @@
 local seed = std.parseInt(std.extVar("SEED"));
 local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
+local accumulation_steps = std.parseInt(std.extVar("ACCUMULATION_STEPS"));
 local train_data_path = std.extVar("TRAINE_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
@@ -9,7 +10,7 @@ local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
     "train_data_path": train_data_path,
     "validation_data_path": validation_data_path,
     "data_loader": {
-        "batch_sampler": {"type": "bucket", "batch_size": batch_size, "padding_noise": 0.0}
+        "batch_sampler": {"type": "bucket", "batch_size": batch_size, "padding_noise": 0.1}
     },
     "trainer": {
         "num_epochs": 100,
@@ -17,7 +18,7 @@ local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
         "cuda_device": -1,
         "grad_norm": 0.25
         ,
-        "num_gradient_accumulation_steps": 2048 / batch_size,
+        "num_gradient_accumulation_steps": accumulation_steps,
         "checkpointer": {
             "num_serialized_models_to_keep": 0
         },
