@@ -25,7 +25,7 @@ class DualEncoder(Model):
         encoder: Seq2VecEncoder,
         criterion: EmbeddingSimilarityLoss,
         evaluate_top_k: int = 1,
-        use_similarity_scale: bool = True,
+        initial_similarity_scale: float = 1.0,
         normalize_embeddings: bool = True,
     ):
         super().__init__(vocab=vocab)
@@ -40,7 +40,9 @@ class DualEncoder(Model):
             "incorrect_similarity": Average(),
         }
 
-        self.similarity_scale = torch.nn.Parameter(torch.ones(1)) if use_similarity_scale else None
+        self.similarity_scale = (
+            torch.nn.Parameter(torch.ones(1) * initial_similarity_scale) if initial_similarity_scale else None
+        )
         self.normalize_embeddings = normalize_embeddings
 
     def forward(
