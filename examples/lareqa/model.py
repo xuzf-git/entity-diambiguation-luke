@@ -3,6 +3,7 @@ import torch
 from allennlp.data import Vocabulary
 from allennlp.models import Model
 from allennlp.data import TextFieldTensors
+from allennlp.training.metrics.average import Average
 
 from examples.utils.retrieval.models import Seq2VecEncoder
 from examples.utils.retrieval.embedding_similarity_loss import EmbeddingSimilarityLoss
@@ -32,7 +33,12 @@ class DualEncoder(Model):
         self.encoder = encoder
         self.criterion = criterion
 
-        self.metrics = {"mAP": MeanAveragePrecision(k=evaluate_top_k)}
+        self.metrics = {
+            "mAP": MeanAveragePrecision(k=evaluate_top_k),
+            "similarity_scale": Average(),
+            "correct_similarity": Average(),
+            "incorrect_similarity": Average(),
+        }
 
         self.similarity_scale = torch.nn.Parameter(torch.ones(1)) if use_similarity_scale else None
         self.normalize_embeddings = normalize_embeddings
@@ -76,8 +82,19 @@ class DualEncoder(Model):
 
         if self.similarity_scale is not None:
             similarity_matrix = similarity_matrix * self.similarity_scale
+            self.metrics["similarity_scale"](self.similarity_scale.detach().item())
 
         loss = self.criterion.forward(similarity_matrix)
+
+        # compute diagnostic metrics
+        batch_size = similarity_matrix.size(0)
+        correct_similarity = similarity_matrix.detach().diag().sum()
+        incorrect_similarity = similarity_matrix.detach().sum() - correct_similarity
+
+        correct_similarity = correct_similarity / batch_size
+        incorrect_similarity = incorrect_similarity / (batch_size * (batch_size - 1))
+        self.metrics["correct_similarity"](correct_similarity)
+        self.metrics["incorrect_similarity"](incorrect_similarity)
 
         if not self.training:
             self.metrics["mAP"](question_embeddings, answer_embeddings, query_ids=ids, target_ids=ids)
