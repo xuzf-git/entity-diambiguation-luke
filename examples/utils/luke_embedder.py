@@ -13,7 +13,11 @@ from luke.model import LukeModel, LukeConfig
 @TokenEmbedder.register("luke")
 class PretrainedLukeEmbedder(TokenEmbedder):
     def __init__(
-        self, pretrained_weight_path: str, pretrained_metadata_path: str, train_parameters: bool = True
+        self,
+        pretrained_weight_path: str,
+        pretrained_metadata_path: str,
+        train_parameters: bool = True,
+        gradient_checkpointing: bool = False,
     ) -> None:
         super().__init__()
 
@@ -25,6 +29,7 @@ class PretrainedLukeEmbedder(TokenEmbedder):
             entity_emb_size=self.metadata["entity_emb_size"],
             **AutoConfig.from_pretrained(self.metadata["bert_model_name"]).to_dict(),
         )
+        config.gradient_checkpointing = gradient_checkpointing
 
         self.luke_model = LukeModel(config)
         self.luke_model.load_state_dict(
