@@ -15,7 +15,7 @@ description = "An open-source NLP research library, built on PyTorch."
 name = "allennlp"
 optional = false
 python-versions = ">=3.6.1"
-version = "2.0.1"
+version = "2.1.0"
 
 [package.dependencies]
 boto3 = ">=1.14,<2.0"
@@ -33,16 +33,33 @@ requests = ">=2.18"
 scikit-learn = "*"
 scipy = "*"
 sentencepiece = "*"
-spacy = ">=2.1.0,<2.4"
+spacy = ">=2.1.0,<3.1"
 tensorboardX = ">=1.2"
 torch = ">=1.6.0,<1.8.0"
 torchvision = ">=0.8.1,<0.9.0"
 tqdm = ">=4.19"
-transformers = ">=4.1,<4.3"
+transformers = ">=4.1,<4.4"
 
 [package.dependencies.dataclasses]
 python = "<3.7"
 version = "*"
+
+[[package]]
+category = "main"
+description = "Officially supported models for the AllenNLP framework"
+name = "allennlp-models"
+optional = false
+python-versions = ">=3.6.1"
+version = "2.1.0"
+
+[package.dependencies]
+allennlp = ">=2.1.0,<2.2"
+conllu = "4.4"
+ftfy = "*"
+nltk = "*"
+py-rouge = "1.1"
+torch = ">=1.7.0,<1.8.0"
+word2number = ">=1.1"
 
 [[package]]
 category = "dev"
@@ -55,7 +72,7 @@ version = "1.4.4"
 [[package]]
 category = "main"
 description = "Disable App Nap on macOS >= 10.9"
-marker = "sys_platform == \"darwin\" or platform_system == \"Darwin\" or python_version >= \"3.3\" and sys_platform == \"darwin\""
+marker = "python_version >= \"3.3\" and sys_platform == \"darwin\" or platform_system == \"Darwin\" or sys_platform == \"darwin\""
 name = "appnope"
 optional = true
 python-versions = "*"
@@ -314,6 +331,14 @@ six = "*"
 
 [[package]]
 category = "main"
+description = "CoNLL-U Parser parses a CoNLL-U formatted string into a nested python dictionary"
+name = "conllu"
+optional = false
+python-versions = "*"
+version = "4.4"
+
+[[package]]
+category = "main"
 description = "Composable style cycles"
 name = "cycler"
 optional = true
@@ -440,6 +465,17 @@ pyflakes = ">=2.2.0,<2.3.0"
 [package.dependencies.importlib-metadata]
 python = "<3.8"
 version = "*"
+
+[[package]]
+category = "main"
+description = "Fixes some problems with Unicode text after the fact"
+name = "ftfy"
+optional = false
+python-versions = ">=3.5"
+version = "5.9"
+
+[package.dependencies]
+wcwidth = "*"
 
 [[package]]
 category = "main"
@@ -1383,7 +1419,7 @@ six = ">=1.9"
 [[package]]
 category = "main"
 description = "Run a subprocess in a pseudo terminal"
-marker = "sys_platform != \"win32\" or os_name != \"nt\" or python_version >= \"3.3\" and sys_platform != \"win32\""
+marker = "python_version >= \"3.3\" and sys_platform != \"win32\" and (python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\") or os_name != \"nt\" or python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\""
 name = "ptyprocess"
 optional = true
 python-versions = "*"
@@ -1396,6 +1432,14 @@ name = "py"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.10.0"
+
+[[package]]
+category = "main"
+description = "Full Python implementation of the ROUGE metric, producing same results as in the official perl implementation."
+name = "py-rouge"
+optional = false
+python-versions = "*"
+version = "1.1"
 
 [[package]]
 category = "dev"
@@ -2234,6 +2278,14 @@ tqdm = "*"
 
 [[package]]
 category = "main"
+description = "Convert number words eg. three hundred and forty two to numbers (342)."
+name = "word2number"
+optional = false
+python-versions = "*"
+version = "1.1"
+
+[[package]]
+category = "main"
 description = "Module for decorators, wrappers and monkey patching."
 name = "wrapt"
 optional = false
@@ -2268,7 +2320,7 @@ icu = ["pyicu"]
 opennlp = ["pyjnius"]
 
 [metadata]
-content-hash = "ec07ae6702ee3278e1e78e92e9ff5342542dafb3b153240690aa20bbc933fe3a"
+content-hash = "cef4c67d1a52d685c2b953afda884f74363de57a8fbc8bd9030c97590dc6bbfe"
 python-versions = "^3.6.1"
 
 [metadata.files]
@@ -2277,8 +2329,12 @@ absl-py = [
     {file = "absl_py-0.11.0-py3-none-any.whl", hash = "sha256:b3d9eb5119ff6e0a0125f6dabf2f9fae02f8acae7be70576002fac27235611c5"},
 ]
 allennlp = [
-    {file = "allennlp-2.0.1-py3-none-any.whl", hash = "sha256:cb50ee8be9ce76a6eef3cf7feb25a093872622887ada15d28d652416d08ace3c"},
-    {file = "allennlp-2.0.1.tar.gz", hash = "sha256:42fed123f808091df957363db5d5827264fad14c14d2b8f25961c2649451ca4b"},
+    {file = "allennlp-2.1.0-py3-none-any.whl", hash = "sha256:2b548dc41c490a5d19f9c50dd3e226246c475660b2f20409dd44752a5be56210"},
+    {file = "allennlp-2.1.0.tar.gz", hash = "sha256:274b577c9cf8a30017cfe03f4205ac4d81e194e69a280c43163cfae0fc6b377d"},
+]
+allennlp-models = [
+    {file = "allennlp_models-2.1.0-py3-none-any.whl", hash = "sha256:f02207a13604dc1f208c17adee8b136c4632fafd2888e278e7f2ee3ecfd95550"},
+    {file = "allennlp_models-2.1.0.tar.gz", hash = "sha256:cc91f282f18f4b1b271c41e7d8ddde25bacc3b3c28426bc84c867bea06e879db"},
 ]
 appdirs = [
     {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
@@ -2431,6 +2487,10 @@ comet-ml = [
 configobj = [
     {file = "configobj-5.0.6.tar.gz", hash = "sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902"},
 ]
+conllu = [
+    {file = "conllu-4.4-py2.py3-none-any.whl", hash = "sha256:fe7e3547bc2beec8a0af8076cd564040dff7feec4ef20779a63a395e59e8116f"},
+    {file = "conllu-4.4.tar.gz", hash = "sha256:37b812ef3e30168232239d65564e257975c3399ec5d7fca9915a52b44bdc6553"},
+]
 cycler = [
     {file = "cycler-0.10.0-py2.py3-none-any.whl", hash = "sha256:1d8a5ae1ff6c5cf9b93e8811e581232ad8920aeec647c37316ceac982b08cb2d"},
     {file = "cycler-0.10.0.tar.gz", hash = "sha256:cd7b2d1018258d7247a71425e9f26463dfb444d411c39569972f4ce586b0c9d8"},
@@ -2533,6 +2593,9 @@ filelock = [
 flake8 = [
     {file = "flake8-3.8.4-py2.py3-none-any.whl", hash = "sha256:749dbbd6bfd0cf1318af27bf97a14e28e5ff548ef8e5b1566ccfb25a11e7c839"},
     {file = "flake8-3.8.4.tar.gz", hash = "sha256:aadae8761ec651813c24be05c6f7b4680857ef6afaae4651a4eccaef97ce6c3b"},
+]
+ftfy = [
+    {file = "ftfy-5.9.tar.gz", hash = "sha256:8c4fb2863c0b82eae2ab3cf353d9ade268dfbde863d322f78d6a9fd5cefb31e9"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
@@ -3153,6 +3216,10 @@ ptyprocess = [
 py = [
     {file = "py-1.10.0-py2.py3-none-any.whl", hash = "sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a"},
     {file = "py-1.10.0.tar.gz", hash = "sha256:21b81bda15b66ef5e1a777a21c4dcd9c20ad3efd0b3f817e7a809035269e1bd3"},
+]
+py-rouge = [
+    {file = "py-rouge-1.1.tar.gz", hash = "sha256:b6caf2f031c45f699a9481c8962b8c33688165a3f2a22e1bfbaede8e073d6bb0"},
+    {file = "py_rouge-1.1-py3-none-any.whl", hash = "sha256:9ae2a859a9edc6d25f3908e48706f7d82d6e78ea18954560c4cb21897dc1d270"},
 ]
 pycodestyle = [
     {file = "pycodestyle-2.6.0-py2.py3-none-any.whl", hash = "sha256:2295e7b2f6b5bd100585ebcb1f616591b652db8a741695b3d8f5d28bdc934367"},
@@ -3806,6 +3873,9 @@ widgetsnbextension = [
 ]
 wikipedia2vec = [
     {file = "wikipedia2vec-1.0.4.tar.gz", hash = "sha256:48a18d0b39162b8b29ead0626711f984003d509cbe52149b8bac3b9a2578e9f8"},
+]
+word2number = [
+    {file = "word2number-1.1.zip", hash = "sha256:70e27a5d387f67b04c71fbb7621c05930b19bfd26efd6851e6e0f9969dcde7d0"},
 ]
 wrapt = [
     {file = "wrapt-1.12.1.tar.gz", hash = "sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7"},
