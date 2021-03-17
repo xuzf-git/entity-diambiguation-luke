@@ -5,6 +5,7 @@ local train_data_path = std.extVar("TRAINE_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
 
+local total_steps = std.parseInt(std.extVar("TOTAL_STEPS"));
 
 {
     "train_data_path": train_data_path,
@@ -24,9 +25,14 @@ local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
         },
         "validation_metric": "-loss",
         "optimizer": {
-            "type": "adam",
+            "type": "adamw",
             "lr": 1e-5
-        }
+        },
+        "learning_rate_scheduler": {
+            "type": "polynomial_decay",
+            "warmup_steps": total_steps / 10,
+            "total_steps": total_steps
+        },
     },
     "random_seed": seed,
     "numpy_seed": seed,
