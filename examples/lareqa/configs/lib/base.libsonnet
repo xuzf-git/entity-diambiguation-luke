@@ -31,7 +31,8 @@ local total_steps = std.parseInt(std.extVar("TOTAL_STEPS"));
         "learning_rate_scheduler": {
             "type": "polynomial_decay",
             "warmup_steps": total_steps / 10,
-            "total_steps": total_steps
+            "num_epochs": 10,
+            "num_steps_per_epoch": total_steps / 10,
         },
     },
     "random_seed": seed,
