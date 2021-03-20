@@ -4,7 +4,7 @@ from allennlp.training.metrics import Metric
 from allennlp.data import Vocabulary
 import torch
 
-import seqeval
+from seqeval.metrics import f1_score, recall_score, precision_score
 from seqeval.scheme import IOB2
 
 
@@ -17,26 +17,30 @@ class SpanToLabelF1(Metric):
         self,
         prediction: torch.Tensor,
         gold_labels: torch.Tensor,
+        prediction_scores: torch.Tensor,
         original_entity_spans: torch.Tensor,
         doc_id: List[str],
         vocab: Vocabulary,
     ):
-        prediction, gold_labels, original_entity_spans = self.detach_tensors(
-            prediction, gold_labels, original_entity_spans
+        prediction, gold_labels, prediction_scores, original_entity_spans = self.detach_tensors(
+            prediction, gold_labels, prediction_scores, original_entity_spans
         )
 
-        for pred, gold, spans, id_ in zip(prediction, gold_labels, original_entity_spans, doc_id):
+        for pred, gold, scores, spans, id_ in zip(
+            prediction, gold_labels, prediction_scores, original_entity_spans, doc_id
+        ):
             pred = pred.tolist()
             gold = gold.tolist()
+            scores = scores.tolist()
             spans = spans.tolist()
-            for p, g, span in zip(pred, gold, spans):
+            for p, g, s, span in zip(pred, gold, scores, spans):
                 if g == -1:
                     continue
                 p = vocab.get_token_from_index(p, namespace="labels")
                 g = vocab.get_token_from_index(g, namespace="labels")
 
-                self.prediction[id_].append((span, p))
-                self.gold_labels[id_].append((span, g))
+                self.prediction[id_].append((s, span, p))
+                self.gold_labels[id_].append((0, span, g))
 
     def reset(self):
         self.prediction = defaultdict(list)
@@ -52,18 +56,17 @@ class SpanToLabelF1(Metric):
             all_predction_sequence.append(self.span_to_label_sequence(self.prediction[doc_id]))
             all_gold_sequence.append(self.span_to_label_sequence(self.gold_labels[doc_id]))
         return dict(
-            f1=seqeval.metrics.f1_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
-            precision=seqeval.metrics.precision_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
-            recall=seqeval.metrics.recall_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
+            f1=f1_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
+            precision=precision_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
+            recall=recall_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
         )
 
     @staticmethod
-    def span_to_label_sequence(span_and_labels: List[Tuple[Tuple[int, int], str]]) -> List[str]:
-        sequence_length = max([end for (start, end), label in span_and_labels])
+    def span_to_label_sequence(span_and_labels: List[Tuple[float, Tuple[int, int], str]]) -> List[str]:
+        sequence_length = max([end for score, (start, end), label in span_and_labels])
         label_sequence = ["O"] * sequence_length
-
-        for (start, end), label in span_and_labels:
-            if label == "O":
+        for score, (start, end), label in sorted(span_and_labels, key=lambda x: -x[0]):
+            if label == "O" or any([l != "O" for l in label_sequence[start:end]]):
                 continue
             label_sequence[start:end] = ["I-" + label] * (end - start)
             label_sequence[start] = "B-" + label

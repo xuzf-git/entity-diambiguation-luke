@@ -6,6 +6,7 @@ from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.models import Model
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
+from allennlp.training.metrics import CategoricalAccuracy
 
 from .metrics.span_to_label_f1 import SpanToLabelF1
 
@@ -17,7 +18,7 @@ class ExhaustiveNERModel(Model):
         vocab: Vocabulary,
         embedder: TextFieldEmbedder,
         encoder: Seq2SeqEncoder = None,
-        dropout: float = 0.0,
+        dropout: float = 0.1,
         label_name_space: str = "labels",
     ):
         super().__init__(vocab=vocab)
@@ -31,6 +32,7 @@ class ExhaustiveNERModel(Model):
         self.criterion = nn.CrossEntropyLoss(ignore_index=-1)
 
         self.span_f1 = SpanToLabelF1()
+        self.span_accuracy = CategoricalAccuracy()
 
     def forward(
         self,
@@ -58,14 +60,20 @@ class ExhaustiveNERModel(Model):
         feature_vector = torch.cat([start_embeddings, end_embeddings], dim=2)
         logits = self.classifier(feature_vector)
         prediction = logits.argmax(dim=-1)
+        prediction_logits = logits.max(dim=-1)
 
         output_dict = {"logits": logits, "prediction": prediction}
 
         if labels is not None:
             output_dict["loss"] = self.criterion(logits.flatten(0, 1), labels.flatten())
-            self.span_f1(prediction, labels, original_entity_spans, doc_id, self.vocab)
+            self.span_accuracy(logits, labels, mask=(labels != -1))
+
+            if not self.training:
+                self.span_f1(prediction, labels, prediction_logits, original_entity_spans, doc_id, self.vocab)
 
         return output_dict
 
     def get_metrics(self, reset: bool = False):
-        return self.span_f1.get_metric(reset)
+        output_dict = self.span_f1.get_metric(reset)
+        output_dict["span_accuracy"] = self.span_accuracy.get_metric(reset)
+        return output_dict

@@ -39,10 +39,10 @@ local token_indexers = {
     "trainer": {
         "cuda_device": -1,
         "grad_norm": 5,
-        "num_epochs": 35,
+        "num_epochs": 10,
         "optimizer": {
             "type": "adam",
-            "lr": 0.0001
+            "lr": 2e-5
         },
         "num_gradient_accumulation_steps": accumulation_steps,
         "patience": 3,
