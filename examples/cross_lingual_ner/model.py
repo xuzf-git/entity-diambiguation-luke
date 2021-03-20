@@ -59,17 +59,14 @@ class ExhaustiveNERModel(Model):
 
         feature_vector = torch.cat([start_embeddings, end_embeddings], dim=2)
         logits = self.classifier(feature_vector)
-        prediction = logits.argmax(dim=-1)
-        prediction_logits = logits.max(dim=-1)
+        prediction_logits, prediction = logits.max(dim=-1)
 
         output_dict = {"logits": logits, "prediction": prediction}
 
         if labels is not None:
             output_dict["loss"] = self.criterion(logits.flatten(0, 1), labels.flatten())
             self.span_accuracy(logits, labels, mask=(labels != -1))
-
-            if not self.training:
-                self.span_f1(prediction, labels, prediction_logits, original_entity_spans, doc_id, self.vocab)
+            self.span_f1(prediction, labels, prediction_logits, original_entity_spans, doc_id, self.vocab)
 
         return output_dict
 
