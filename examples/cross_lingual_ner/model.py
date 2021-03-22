@@ -39,13 +39,19 @@ class ExhaustiveNERModel(Model):
         word_ids: TextFieldTensors,
         entity_start_positions: torch.LongTensor,
         entity_end_positions: torch.LongTensor,
-        entity_ids: torch.LongTensor,
-        entity_position_ids: torch.LongTensor,
         original_entity_spans: torch.LongTensor,
         doc_id: List[str],
         labels: torch.LongTensor = None,
+        entity_ids: torch.LongTensor = None,
+        entity_position_ids: torch.LongTensor = None,
         **kwargs
     ):
+
+        if entity_ids is not None:
+            word_ids["tokens"]["entity_ids"] = entity_ids
+            word_ids["tokens"]["entity_position_ids"] = entity_position_ids
+            word_ids["tokens"]["entity_attention_mask"] = entity_ids == 1
+
         token_embeddings = self.embedder(word_ids)
         if self.encoder is not None:
             token_embeddings = self.encoder(token_embeddings)

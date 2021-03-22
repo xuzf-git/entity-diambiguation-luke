@@ -56,6 +56,11 @@ class EntityVocab(object):
         else:
             self._parse_jsonl_vocab_file(vocab_file)
 
+        self.special_token_ids = {}
+        for special_token in SPECIAL_TOKENS:
+            special_token_entity = self.search_across_languages(special_token)[0]
+            self.special_token_ids[special_token] = self.get_id(*special_token_entity)
+
     def _parse_tsv_vocab_file(self, vocab_file: str):
         with open(vocab_file, "r") as f:
             for (index, line) in enumerate(f):
@@ -112,6 +117,13 @@ class EntityVocab(object):
     def get_count_by_title(self, title: str, language: str = None) -> int:
         entity = Entity(title, language)
         return self.counter.get(entity, 0)
+
+    def search_across_languages(self, title: str) -> List[Entity]:
+        results = []
+        for entity in self.vocab.keys():
+            if entity.title == title:
+                results.append(entity)
+        return results
 
     def save(self, out_file: str):
         with open(out_file, "w") as f:

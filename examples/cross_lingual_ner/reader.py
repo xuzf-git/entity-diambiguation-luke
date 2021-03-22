@@ -53,6 +53,7 @@ class ConllExhaustiveReader(DatasetReader):
         max_entity_length: int = 128,
         max_mention_length: int = 16,
         encoding: str = "utf-8",
+        use_entity_feature: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -65,6 +66,7 @@ class ConllExhaustiveReader(DatasetReader):
         self.max_mention_length = max_mention_length
 
         self.encoding = encoding
+        self.use_entity_feature = use_entity_feature
 
     def data_to_instance(self, words: List[str], labels: List[str], sentence_boundaries: List[int], doc_index: str):
         if self.tokenizer is None:
@@ -171,20 +173,24 @@ class ConllExhaustiveReader(DatasetReader):
                 entity_size = math.ceil(len(entity_ids) / split_size)
                 start = i * entity_size
                 end = start + entity_size
-                yield Instance(
-                    {
-                        "word_ids": TextField(word_ids, token_indexers=self.token_indexers),
-                        "entity_start_positions": ArrayField(np.array(entity_start_positions[start:end])),
-                        "entity_end_positions": ArrayField(np.array(entity_end_positions[start:end])),
-                        "entity_ids": ArrayField(np.array(entity_ids[start:end])),
-                        "entity_position_ids": ArrayField(np.array(entity_position_ids[start:end])),
-                        "original_entity_spans": ArrayField(
-                            np.array(original_entity_spans[start:end]), padding_value=-1
-                        ),
-                        "labels": ListField([LabelField(l) for l in labels[start:end]]),
-                        "doc_id": MetadataField(doc_index),
-                    }
-                )
+                fields = {
+                    "word_ids": TextField(word_ids, token_indexers=self.token_indexers),
+                    "entity_start_positions": ArrayField(np.array(entity_start_positions[start:end])),
+                    "entity_end_positions": ArrayField(np.array(entity_end_positions[start:end])),
+                    "original_entity_spans": ArrayField(np.array(original_entity_spans[start:end]), padding_value=-1),
+                    "labels": ListField([LabelField(l) for l in labels[start:end]]),
+                    "doc_id": MetadataField(doc_index),
+                }
+
+                if self.use_entity_feature:
+                    fields.update(
+                        {
+                            "entity_ids": ArrayField(np.array(entity_ids[start:end])),
+                            "entity_position_ids": ArrayField(np.array(entity_position_ids[start:end])),
+                        }
+                    )
+
+                yield Instance(fields)
 
     def _read(self, file_path: str):
         for i, (words, labels, sentence_boundaries) in enumerate(
