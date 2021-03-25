@@ -125,9 +125,7 @@ def evaluate_bucc(
     scoring_function = ScoringFunction.by_name(scoring_function)()
     retriever = Retriever.by_name(retriever)()
     prediction = []
-    for source_embedding_shard, source_indices_shard in tqdm.tqdm(
-        zip(sharding(source_embeddings), sharding(source_indices))
-    ):
+    for source_embedding_shard, source_indices_shard in zip(sharding(source_embeddings), sharding(source_indices)):
         scores = scoring_function(source_embedding_shard, target_embeddings)
 
         max_scores, retrieved_indices = retriever(scores)
