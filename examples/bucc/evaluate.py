@@ -38,10 +38,10 @@ def extract_sentence_embeddings(data_loader, model, device: torch.device, debug:
     return sentence_embeddings, indices
 
 
-def sharding(iterable, sharding_size: int = 64):
-    l = len(iterable)
-    for ndx in range(0, l, sharding_size):
-        yield iterable[ndx : min(ndx + sharding_size, l)]
+def sharding(iterable, sharding_size: int = 64, length: int = None):
+    length = length or len(iterable)
+    for ndx in range(0, length, sharding_size):
+        yield iterable[ndx : min(ndx + sharding_size, length)]
 
 
 @click.command()
@@ -125,8 +125,8 @@ def evaluate_bucc(
     scoring_function = ScoringFunction.by_name(scoring_function)()
     retriever = Retriever.by_name(retriever)()
     prediction = []
-    for source_embedding_shard, source_indices_shard in sharding(
-        zip(source_embeddings, source_indices), sharding_size=64
+    for source_embedding_shard, source_indices_shard in tqdm.tqdm(
+        sharding(zip(source_embeddings, source_indices), sharding_size=64, length=len(source_indices))
     ):
         scores = scoring_function(source_embedding_shard, target_embeddings)
 
