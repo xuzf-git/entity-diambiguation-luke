@@ -4,6 +4,7 @@ import torch
 import tqdm
 import logging
 import sys
+
 sys.path.append("./")
 
 from examples.bucc.reader import parse_bucc_file
@@ -35,6 +36,12 @@ def extract_sentence_embeddings(data_loader, model, device: torch.device, debug:
             sentence_embeddings.append(output_embeddings)
     sentence_embeddings = torch.cat(sentence_embeddings, dim=0)
     return sentence_embeddings, indices
+
+
+def sharding(iterable, sharding_size: int = 64):
+    l = len(iterable)
+    for ndx in range(0, l, sharding_size):
+        yield iterable[ndx : min(ndx + sharding_size, l)]
 
 
 @click.command()
@@ -116,13 +123,17 @@ def evaluate_bucc(
 
     logger.info("Calculating scores...")
     scoring_function = ScoringFunction.by_name(scoring_function)()
-    scores = scoring_function(source_embeddings, target_embeddings)
-
     retriever = Retriever.by_name(retriever)()
-    max_scores, retrieved_indices = retriever(scores)
-    max_scores = max_scores.tolist()
-    retrieved_target_indices = [target_indices[i] for i in retrieved_indices]
-    prediction = [(src, tgt) for src, tgt in zip(source_indices, retrieved_target_indices)]
+    prediction = []
+    for source_embedding_shard, source_indices_shard in sharding(
+        zip(source_embeddings, source_indices), sharding_size=64
+    ):
+        scores = scoring_function(source_embedding_shard, target_embeddings)
+
+        max_scores, retrieved_indices = retriever(scores)
+        max_scores = max_scores.tolist()
+        retrieved_target_indices = [target_indices[i] for i in retrieved_indices]
+        prediction += [(src, tgt) for src, tgt in zip(source_indices_shard, retrieved_target_indices)]
 
     sorted_predictions = reversed(sorted(zip(max_scores, prediction)))
     filtered_prediction = [src_tgt for _, src_tgt in sorted_predictions][: len(gold_indices)]
