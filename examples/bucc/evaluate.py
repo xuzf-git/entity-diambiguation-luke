@@ -145,7 +145,7 @@ def evaluate_bucc(
 
     if output_file is not None:
         prediction_dict_list = [
-            {"source": src, "target": tgt, "score": score} for (src, tgt), score in zip(prediction, max_scores)
+            {"source": src, "target": tgt, "score": score} for (src, tgt), score in zip(all_prediction, all_max_scores)
         ]
         result_dict = {
             "prediction": prediction_dict_list,
