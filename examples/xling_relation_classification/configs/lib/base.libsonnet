@@ -11,11 +11,15 @@ local num_steps_per_epoch = std.parseInt(std.extVar("NUM_STEPS_PER_EPOCH"));
 
 local base = import "lib/base.libsonnet";
 
-local tokenizer = {"type": "pretrained_transformer", "model_name": transformers_model_name, "add_special_tokens": false};
-local token_indexers = {
-            "tokens": {"type": "pretrained_transformer", "model_name": transformers_model_name}
-    };
 
+local extra_tokens = ["<e1>", "</e1>", "<e2>", "</e2>"];
+
+local tokenizer = {"type": "pretrained_transformer", "model_name": transformers_model_name, "add_special_tokens": false,
+                   "tokenizer_kwargs": {"additional_special_tokens": extra_tokens}};
+local token_indexers = {
+            "tokens": {"type": "pretrained_transformer", "model_name": transformers_model_name,
+                       "tokenizer_kwargs": {"additional_special_tokens": extra_tokens}
+    }};
 
 {
     "dataset_reader": {

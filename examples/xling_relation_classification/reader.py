@@ -1,6 +1,5 @@
-from typing import List
 from typing import Dict
-from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Token, Instance
+from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import SpanField, TextField, LabelField
 
@@ -24,15 +23,15 @@ E2_END = "</e2>"
 
 @DatasetReader.register("kbp37")
 class KBP37Reader(DatasetReader):
-    entity_markers = [E1_START, E1_END, E2_START, E2_END]
-
     def __init__(self, tokenizer: Tokenizer, token_indexers: Dict[str, TokenIndexer], **kwargs):
         super().__init__(**kwargs)
         self.tokenizer = tokenizer
         self.token_indexers = token_indexers
 
     def text_to_instance(self, sentence: str, label: str):
-        tokens = self._tokenize_with_entity_markers(sentence)
+        tokens = self.tokenizer.tokenize(sentence)
+        if isinstance(self.tokenizer, PretrainedTransformerTokenizer):
+            tokens = self.tokenizer.add_special_tokens(tokens)
         text_field = TextField(tokens, token_indexers=self.token_indexers)
 
         texts = [t.text for t in tokens]
@@ -54,16 +53,3 @@ class KBP37Reader(DatasetReader):
     def _read(self, file_path: str):
         for data in parse_relx_file(file_path):
             yield self.text_to_instance(data["sentence"], data["label"])
-
-    def _tokenize_with_entity_markers(self, sentence: str) -> List[Token]:
-        tokens = []
-        remainder = sentence
-        for marker in self.entity_markers:
-            seg, remainder = remainder.split(marker, maxsplit=1)
-            tokens += self.tokenizer.tokenize(seg)
-            tokens += [Token(marker)]
-        tokens += self.tokenizer.tokenize(remainder)
-
-        if isinstance(self.tokenizer, PretrainedTransformerTokenizer):
-            tokens = self.tokenizer.add_special_tokens(tokens)
-        return tokens
