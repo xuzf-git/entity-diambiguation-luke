@@ -64,6 +64,7 @@ class ExhaustiveNERModel(Model):
         end_embeddings = torch.gather(token_embeddings, -2, entity_end_positions)
 
         feature_vector = torch.cat([start_embeddings, end_embeddings], dim=2)
+        feature_vector = self.dropout(feature_vector)
         logits = self.classifier(feature_vector)
         prediction_logits, prediction = logits.max(dim=-1)
 
