@@ -38,7 +38,7 @@ def extract_sentence_embeddings(data_loader, model, device: torch.device, debug:
     return sentence_embeddings, indices
 
 
-def sharding(iterable, sharding_size: int = 1024):
+def sharding(iterable, sharding_size: int = 8192):
     l = len(iterable)
     for ndx in range(0, l, sharding_size):
         yield iterable[ndx : min(ndx + sharding_size, l)]
