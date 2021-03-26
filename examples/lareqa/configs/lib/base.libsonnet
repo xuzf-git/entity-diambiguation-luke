@@ -4,8 +4,8 @@ local accumulation_steps = std.parseInt(std.extVar("ACCUMULATION_STEPS"));
 local train_data_path = std.extVar("TRAINE_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
-
-local total_steps = std.parseInt(std.extVar("TOTAL_STEPS"));
+local num_epochs = 20;
+local num_steps_per_epoch = std.parseInt(std.extVar("NUM_STEPS_PER_EPOCH"));
 
 {
     "train_data_path": train_data_path,
@@ -14,8 +14,8 @@ local total_steps = std.parseInt(std.extVar("TOTAL_STEPS"));
         "batch_size": batch_size, "shuffle": true
     },
     "trainer": {
-        "num_epochs": 100,
-        "patience": 5,
+        "num_epochs": num_epochs,
+        "patience": 3,
         "cuda_device": -1,
         "grad_norm": 0.25
         ,
@@ -26,13 +26,23 @@ local total_steps = std.parseInt(std.extVar("TOTAL_STEPS"));
         "validation_metric": "-loss",
         "optimizer": {
             "type": "adamw",
-            "lr": 1e-5
+            "lr": 2e-5,
+            "weight_decay": 0.01,
+            "parameter_groups": [
+                [
+                    [
+                        "bias",
+                        "LayerNorm.weight",
+                    ],
+                    {
+                        "weight_decay": 0
+                    }
+                ]
+            ],
         },
         "learning_rate_scheduler": {
-            "type": "polynomial_decay",
-            "warmup_steps": total_steps / 10,
-            "num_epochs": 10,
-            "num_steps_per_epoch": total_steps / 10,
+            "type": "linear_with_warmup",
+            "warmup_steps": num_steps_per_epoch * num_epochs / 10
         },
     },
     "random_seed": seed,
