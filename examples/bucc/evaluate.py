@@ -124,19 +124,20 @@ def evaluate_bucc(
     logger.info("Calculating scores...")
     scoring_function = ScoringFunction.by_name(scoring_function)()
     retriever = Retriever.by_name(retriever)()
-    prediction = []
+    all_prediction = []
+    all_max_scores = []
     for source_embedding_shard, source_indices_shard in zip(sharding(source_embeddings), sharding(source_indices)):
         scores = scoring_function(source_embedding_shard, target_embeddings)
 
         max_scores, retrieved_indices = retriever(scores)
-        max_scores = max_scores.tolist()
+        all_max_scores += max_scores.tolist()
         retrieved_target_indices = [target_indices[i] for i in retrieved_indices]
-        prediction += [(src, tgt) for src, tgt in zip(source_indices_shard, retrieved_target_indices)]
+        all_prediction += [(src, tgt) for src, tgt in zip(source_indices_shard, retrieved_target_indices)]
 
-    sorted_predictions = reversed(sorted(zip(max_scores, prediction)))
+    sorted_predictions = reversed(sorted(zip(all_max_scores, all_prediction)))
     filtered_prediction = [src_tgt for _, src_tgt in sorted_predictions][: len(gold_indices)]
     metrics = compute_f1_score(prediction=filtered_prediction, gold=gold_indices)
-    retrieve_all_metrics = compute_f1_score(prediction=prediction, gold=gold_indices)
+    retrieve_all_metrics = compute_f1_score(prediction=all_prediction, gold=gold_indices)
     logger.info("metrics")
     logger.info(metrics)
     logger.info("retrieve_all_metrics")
