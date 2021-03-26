@@ -1,4 +1,4 @@
-local bert_model_name = std.extVar("BERT_MODEL_NAME");
+local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
 local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 local test_data_path = std.extVar("TEST_DATA_PATH");
@@ -11,9 +11,9 @@ local num_steps_per_epoch = std.parseInt(std.extVar("NUM_STEPS_PER_EPOCH"));
 
 local base = import "lib/base.libsonnet";
 
-local tokenizer = {"type": "pretrained_transformer", "model_name": bert_model_name, "add_special_tokens": false};
+local tokenizer = {"type": "pretrained_transformer", "model_name": transformers_model_name, "add_special_tokens": false};
 local token_indexers = {
-            "tokens": {"type": "pretrained_transformer", "model_name": bert_model_name}
+            "tokens": {"type": "pretrained_transformer", "model_name": transformers_model_name}
     };
 
 
