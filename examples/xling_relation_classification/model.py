@@ -135,3 +135,6 @@ class TransformersRelationClassifier(Model):
         range_tensor = torch.arange(batch_size, device=token_embeddings.device)
         start_embeddings = token_embeddings[range_tensor, entity_start_position]
         return start_embeddings
+
+    def get_metrics(self, reset: bool = False):
+        return {k: metric.get_metric() for k, metric in self.metrics.items()}
