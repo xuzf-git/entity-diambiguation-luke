@@ -1,3 +1,4 @@
+from typing import List
 import torch
 import torch.nn as nn
 
@@ -6,8 +7,9 @@ from allennlp.models import Model
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy
-
 from examples.utils.luke_embedder import PretrainedLukeEmbedder
+
+from .metrics.multiway_f1 import MultiwayF1
 
 
 @Model.register("transformers_relation_classifier")
@@ -26,6 +28,7 @@ class TransformersRelationClassifier(Model):
         dropout: float = 0.1,
         label_name_space: str = "labels",
         feature_type: str = "entity_start",
+        ignored_labels: List[str] = None,
     ):
 
         super().__init__(vocab=vocab)
@@ -43,10 +46,15 @@ class TransformersRelationClassifier(Model):
 
         self.classifier = nn.Linear(feature_size, vocab.get_vocab_size(label_name_space))
 
+        self.label_name_space = label_name_space
+
         self.dropout = nn.Dropout(p=dropout)
         self.criterion = nn.CrossEntropyLoss()
 
-        self.metrics = {"accuracy": CategoricalAccuracy()}
+        self.metrics = {
+            "accuracy": CategoricalAccuracy(),
+            "f1": MultiwayF1(ignored_labels=ignored_labels),
+        }
 
     def forward(
         self,
@@ -92,6 +100,12 @@ class TransformersRelationClassifier(Model):
         if labels is not None:
             output_dict["loss"] = self.criterion(logits, labels)
             self.metrics["accuracy"](logits, labels)
+
+            prediction_labels = [
+                self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in prediction.tolist()
+            ]
+            gold_labels = [self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in labels.tolist()]
+            self.metrics["f1"](prediction, labels, prediction_labels, gold_labels)
 
         return output_dict
 
