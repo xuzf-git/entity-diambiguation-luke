@@ -137,4 +137,4 @@ class TransformersRelationClassifier(Model):
         return start_embeddings
 
     def get_metrics(self, reset: bool = False):
-        return {k: metric.get_metric() for k, metric in self.metrics.items()}
+        return {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
