@@ -51,6 +51,9 @@ class MultiwayF1(Metric):
 
     def get_f1(self, label: str) -> float:
         tp = self._true_positives[label]
+        if tp == 0:
+            return 0
+
         fn = self._false_negatives[label]
         fp = self._false_positives[label]
         precision = tp / (tp + fp)
