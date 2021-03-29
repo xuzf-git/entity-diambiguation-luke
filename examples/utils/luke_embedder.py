@@ -22,6 +22,7 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         gradient_checkpointing: bool = False,
         num_special_mask_embeddings: int = None,
         output_entity_embeddings: bool = False,
+            num_additional_special_tokens: int = None
     ) -> None:
         """
 
@@ -51,6 +52,9 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         output_entity_embeddings: `bool`
             If specified, the model returns entity embeddings instead of token embeddings.
             If you need both, please use PretrainedLukeEmbedderWithEntity.
+
+        num_additional_special_tokens: `int`
+            Used when adding special tokens to the pre-trained vocabulary.
         """
         super().__init__()
 
@@ -73,6 +77,12 @@ class PretrainedLukeEmbedder(TokenEmbedder):
             model_weights["entity_embeddings.entity_embeddings.weight"] = torch.cat(
                 [pad_emb] + [mask_emb for _ in range(num_special_mask_embeddings)]
             )
+
+        if num_additional_special_tokens:
+            word_emb = model_weights["embeddings.word_embeddings.weight"]
+            embed_size = word_emb.size(1)
+            additional_embs = [torch.rand(1, embed_size) for _ in range(num_additional_special_tokens)]
+            model_weights["embeddings.word_embeddings.weight"] = torch.cat([word_emb] + additional_embs, dim=0)
 
         config = LukeConfig(
             entity_vocab_size=self.metadata["entity_vocab_size"],

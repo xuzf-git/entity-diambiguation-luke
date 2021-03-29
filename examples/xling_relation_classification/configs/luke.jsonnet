@@ -15,7 +15,8 @@ base + {
                     "type": "luke",
                     "pretrained_weight_path": pretrained_weight_path,
                     "pretrained_metadata_path": pretrained_metadata_path,
-                    "entity_vocab_path": entity_vocab_path
+                    "entity_vocab_path": entity_vocab_path,
+                    "num_additional_special_tokens": 4
                 }
             }
         },
