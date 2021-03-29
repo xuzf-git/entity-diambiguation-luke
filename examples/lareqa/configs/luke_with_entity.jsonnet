@@ -1,14 +1,9 @@
-local bert_model_name = std.extVar("BERT_MODEL_NAME");
 local pretrained_weight_path = std.extVar("PRETRAINED_WEIGHT_PATH");
 local pretrained_metadata_path = std.extVar("PRETRAINED_METADATA_PATH");
 
 
 local base = import "lib/base.libsonnet";
 
-local tokenizer = {"type": "pretrained_transformer", "model_name": bert_model_name, "add_special_tokens": true};
-local token_indexers = {
-            "tokens": {"type": "pretrained_transformer", "model_name": bert_model_name}
-    };
 
 local mention_detector = {
         "wiki_link_db_path": "/home/ryo0123/wiki_link_data/enwiki-20160501-wiki-link.db",
@@ -40,20 +35,8 @@ local multilingual_mention_detector = {
 };
 
 base + {
-    "dataset_reader": {
-       "type": "lareqa",
-       "mode": "squad",
-       "tokenizer": tokenizer,
-       "token_indexers": token_indexers,
-       "wiki_mention_detector": mention_detector
-       },
-    "validation_dataset_reader": {
-       "type": "lareqa",
-       "mode": "lareqa",
-       "tokenizer": tokenizer,
-       "token_indexers": token_indexers,
-       "wiki_mention_detector": multilingual_mention_detector
-       },
+    "dataset_reader": base["dataset_reader"] + {"wiki_mention_detector": mention_detector},
+    "validation_dataset_reader": base["validation_dataset_reader"] + {"wiki_mention_detector": multilingual_mention_detector},
     "model": {
         "type": "dual_encoder_retrieval",
         "encoder": {

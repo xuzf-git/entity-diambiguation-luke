@@ -78,7 +78,7 @@ class LAReQAReader(DatasetReader):
         mode: str = "lareqa",
         max_sequence_length: int = 512,
         wiki_mention_detector: WikiMentionDetector = None,
-        enable_type_ids: bool = False,
+        enable_type_ids: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
