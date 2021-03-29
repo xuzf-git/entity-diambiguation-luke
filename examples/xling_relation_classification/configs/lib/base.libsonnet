@@ -6,7 +6,7 @@ local test_data_path = std.extVar("TEST_DATA_PATH");
 local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
 local accumulation_steps = std.parseInt(std.extVar("ACCUMULATION_STEPS"));
 
-local num_epochs = 20;
+local num_epochs = std.parseInt(std.extVar("NUM_EPOCHS"));
 local num_steps_per_epoch = std.parseInt(std.extVar("NUM_STEPS_PER_EPOCH"));
 
 local base = import "lib/base.libsonnet";
@@ -33,7 +33,7 @@ local token_indexers = {
     "trainer": {
         "cuda_device": -1,
         "grad_norm": 5,
-        "num_epochs": 20,
+        "num_epochs": num_epochs,
         "optimizer": {
             "type": "adamw",
             "lr": 2e-5,

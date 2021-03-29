@@ -113,12 +113,10 @@ class LukeModel(nn.Module):
         word_seq_size = word_ids.size(1)
 
         embedding_output = self.embeddings(word_ids, word_segment_ids)
-
         attention_mask = self._compute_extended_attention_mask(word_attention_mask, entity_attention_mask)
         if entity_ids is not None:
             entity_embedding_output = self.entity_embeddings(entity_ids, entity_position_ids, entity_segment_ids)
             embedding_output = torch.cat([embedding_output, entity_embedding_output], dim=1)
-
         encoder_outputs = self.encoder(embedding_output, attention_mask, [None] * self.config.num_hidden_layers)
         sequence_output = encoder_outputs[0]
         word_sequence_output = sequence_output[:, :word_seq_size, :]

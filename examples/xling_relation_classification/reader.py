@@ -1,7 +1,8 @@
 from typing import Dict
+import numpy as np
 from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
-from allennlp.data.fields import SpanField, TextField, LabelField
+from allennlp.data.fields import SpanField, TextField, LabelField, ArrayField
 
 
 def parse_relx_file(path: str):
@@ -23,10 +24,13 @@ E2_END = "</e2>"
 
 @DatasetReader.register("kbp37")
 class KBP37Reader(DatasetReader):
-    def __init__(self, tokenizer: Tokenizer, token_indexers: Dict[str, TokenIndexer], **kwargs):
+    def __init__(
+        self, tokenizer: Tokenizer, token_indexers: Dict[str, TokenIndexer], use_entity_feature: bool = False, **kwargs
+    ):
         super().__init__(**kwargs)
         self.tokenizer = tokenizer
         self.token_indexers = token_indexers
+        self.use_entity_feature = use_entity_feature
 
     def text_to_instance(self, sentence: str, label: str):
         tokens = self.tokenizer.tokenize(sentence)
@@ -41,14 +45,17 @@ class KBP37Reader(DatasetReader):
         e2_start_position = texts.index(E2_START)
         e2_end_position = texts.index(E2_END)
 
-        return Instance(
-            {
-                "word_ids": text_field,
-                "entity1_span": SpanField(e1_start_position, e1_end_position, text_field),
-                "entity2_span": SpanField(e2_start_position, e2_end_position, text_field),
-                "labels": LabelField(label),
-            }
-        )
+        fields = {
+            "word_ids": text_field,
+            "entity1_span": SpanField(e1_start_position, e1_end_position, text_field),
+            "entity2_span": SpanField(e2_start_position, e2_end_position, text_field),
+            "labels": LabelField(label),
+        }
+
+        if self.use_entity_feature:
+            fields["entity_ids"] = ArrayField(np.array([1, 2]))
+
+        return Instance(fields)
 
     def _read(self, file_path: str):
         for data in parse_relx_file(file_path):

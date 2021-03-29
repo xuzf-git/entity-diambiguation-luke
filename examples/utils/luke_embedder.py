@@ -20,8 +20,38 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         entity_vocab_path: str = None,
         train_parameters: bool = True,
         gradient_checkpointing: bool = False,
-        only_use_mask_embedding: bool = False,
+        num_special_mask_embeddings: int = None,
+        output_entity_embeddings: bool = False,
     ) -> None:
+        """
+
+        Parameters
+        ----------
+        pretrained_weight_path: `str`
+            Path to the luke pre-trained weight.
+
+        pretrained_metadata_path: `str`
+            Path to the luke pre-trained metadata, typically stored under the same directory as pretrained_weight_path.
+
+        entity_vocab_path: `str`
+            Path to the luke entity vocabulary.
+
+        train_parameters: `bool`
+            Decide if tunening or freezing pre-trained weights.
+
+        gradient_checkpointing: `bool`
+            Enable gradient checkpoinitng, which significantly reduce memory usage.
+
+        num_special_mask_embeddings: `int`
+            If specified, the model discard all the entity embeddings
+            and only use the number of embeddings initialized with [MASK].
+            This is used with the tasks such as named entity recognition (num_special_mask_embeddings=1),
+            or relation classification (num_special_mask_embeddings=2).
+
+        output_entity_embeddings: `bool`
+            If specified, the model returns entity embeddings instead of token embeddings.
+            If you need both, please use PretrainedLukeEmbedderWithEntity.
+        """
         super().__init__()
 
         self.metadata = json.load(open(pretrained_metadata_path, "r"))["model_config"]
@@ -31,16 +61,18 @@ class PretrainedLukeEmbedder(TokenEmbedder):
             self.entity_vocab = None
 
         model_weights = torch.load(pretrained_weight_path, map_location=torch.device("cpu"))
-        self.only_use_mask_embedding = only_use_mask_embedding
-        if only_use_mask_embedding:
+        self.num_special_mask_embeddings = num_special_mask_embeddings
+        if num_special_mask_embeddings:
             assert self.entity_vocab is not None
             pad_id = self.entity_vocab.special_token_ids[PAD_TOKEN]
             mask_id = self.entity_vocab.special_token_ids[MASK_TOKEN]
-            self.metadata["entity_vocab_size"] = 2
+            self.metadata["entity_vocab_size"] = 1 + num_special_mask_embeddings
             entity_emb = model_weights["entity_embeddings.entity_embeddings.weight"]
             mask_emb = entity_emb[mask_id].unsqueeze(0)
             pad_emb = entity_emb[pad_id].unsqueeze(0)
-            model_weights["entity_embeddings.entity_embeddings.weight"] = torch.cat([pad_emb, mask_emb])
+            model_weights["entity_embeddings.entity_embeddings.weight"] = torch.cat(
+                [pad_emb] + [mask_emb for _ in range(num_special_mask_embeddings)]
+            )
 
         config = LukeConfig(
             entity_vocab_size=self.metadata["entity_vocab_size"],
@@ -49,6 +81,8 @@ class PretrainedLukeEmbedder(TokenEmbedder):
             **AutoConfig.from_pretrained(self.metadata["bert_model_name"]).to_dict(),
         )
         config.gradient_checkpointing = gradient_checkpointing
+
+        self.output_entity_embeddings = output_entity_embeddings
 
         self.luke_model = LukeModel(config)
         self.luke_model.load_state_dict(model_weights, strict=False)
@@ -72,7 +106,11 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         entity_segment_ids: torch.LongTensor = None,
         entity_attention_mask: torch.LongTensor = None,
     ) -> torch.Tensor:  # type: ignore
-        sequence_output = self.luke_model(
+
+        if self.output_entity_embeddings:
+            assert entity_ids is not None
+
+        luke_outputs = self.luke_model(
             token_ids,
             word_segment_ids=type_ids,
             word_attention_mask=mask,
@@ -80,6 +118,36 @@ class PretrainedLukeEmbedder(TokenEmbedder):
             entity_position_ids=entity_position_ids,
             entity_segment_ids=entity_segment_ids,
             entity_attention_mask=entity_attention_mask,
-        )[0]
+        )
 
-        return sequence_output
+        if self.output_entity_embeddings:
+            return luke_outputs[1]
+        else:
+            return luke_outputs[0]
+
+
+@TokenEmbedder.register("luke_with_entity")
+class PretrainedLukeEmbedderWithEntity(PretrainedLukeEmbedder):
+    @overrides
+    def forward(
+        self,
+        token_ids: torch.LongTensor,
+        mask: torch.BoolTensor,
+        entity_ids: torch.LongTensor,
+        entity_position_ids: torch.LongTensor,
+        type_ids: Optional[torch.LongTensor] = None,
+        entity_segment_ids: torch.LongTensor = None,
+        entity_attention_mask: torch.LongTensor = None,
+    ) -> torch.Tensor:  # type: ignore
+
+        luke_outputs = self.luke_model(
+            token_ids,
+            word_segment_ids=type_ids,
+            word_attention_mask=mask,
+            entity_ids=entity_ids,
+            entity_position_ids=entity_position_ids,
+            entity_segment_ids=entity_segment_ids,
+            entity_attention_mask=entity_attention_mask,
+        )
+
+        return luke_outputs[0], luke_outputs[1]

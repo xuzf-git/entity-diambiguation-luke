@@ -16,5 +16,6 @@ base + {
                     }
                 }
             },
+        "feature_type": "entity_start"
     }
 }
