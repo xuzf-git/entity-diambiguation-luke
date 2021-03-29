@@ -16,7 +16,7 @@ base + {
                     "pretrained_weight_path": pretrained_weight_path,
                     "pretrained_metadata_path": pretrained_metadata_path,
                     "entity_vocab_path": entity_vocab_path,
-                    "only_use_mask_embedding": true,
+                    "num_special_mask_embeddings": 1
                 }
             }
         }
