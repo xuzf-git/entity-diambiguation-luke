@@ -8,6 +8,8 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy
 
+from examples.utils.luke_embedder import PretrainedLukeEmbedder
+
 from .metrics.span_to_label_f1 import SpanToLabelF1
 
 
@@ -26,13 +28,19 @@ class ExhaustiveNERModel(Model):
         self.encoder = encoder
 
         token_embed_size = self.encoder.get_output_dim() if self.encoder else self.embedder.get_output_dim()
-        self.classifier = nn.Linear(token_embed_size * 2, vocab.get_vocab_size(label_name_space))
+        feature_size = token_embed_size if self.is_using_luke_with_entity() else token_embed_size * 2
+        self.classifier = nn.Linear(feature_size, vocab.get_vocab_size(label_name_space))
 
         self.dropout = nn.Dropout(p=dropout)
         self.criterion = nn.CrossEntropyLoss(ignore_index=-1)
 
         self.span_f1 = SpanToLabelF1()
         self.span_accuracy = CategoricalAccuracy()
+
+    def is_using_luke_with_entity(self) -> bool:
+        # check if the token embedder is Luke
+        token_embedder = self.embedder._token_embedders["tokens"]
+        return isinstance(token_embedder, PretrainedLukeEmbedder) and token_embedder.output_entity_embeddings
 
     def forward(
         self,
@@ -48,6 +56,7 @@ class ExhaustiveNERModel(Model):
     ):
 
         if entity_ids is not None:
+            assert self.is_using_luke_with_entity()
             word_ids["tokens"]["entity_ids"] = entity_ids
             word_ids["tokens"]["entity_position_ids"] = entity_position_ids
             word_ids["tokens"]["entity_attention_mask"] = entity_ids == 1
@@ -57,13 +66,17 @@ class ExhaustiveNERModel(Model):
             token_embeddings = self.encoder(token_embeddings)
         embedding_size = token_embeddings.size(-1)
 
-        entity_start_positions = entity_start_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
-        start_embeddings = torch.gather(token_embeddings, -2, entity_start_positions)
+        if entity_ids is None:
+            entity_start_positions = entity_start_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
+            start_embeddings = torch.gather(token_embeddings, -2, entity_start_positions)
 
-        entity_end_positions = entity_end_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
-        end_embeddings = torch.gather(token_embeddings, -2, entity_end_positions)
+            entity_end_positions = entity_end_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
+            end_embeddings = torch.gather(token_embeddings, -2, entity_end_positions)
 
-        feature_vector = torch.cat([start_embeddings, end_embeddings], dim=2)
+            feature_vector = torch.cat([start_embeddings, end_embeddings], dim=2)
+        else:
+            feature_vector = token_embeddings
+
         feature_vector = self.dropout(feature_vector)
         logits = self.classifier(feature_vector)
         prediction_logits, prediction = logits.max(dim=-1)
