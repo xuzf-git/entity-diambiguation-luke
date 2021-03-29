@@ -78,12 +78,6 @@ class PretrainedLukeEmbedder(TokenEmbedder):
                 [pad_emb] + [mask_emb for _ in range(num_special_mask_embeddings)]
             )
 
-        if num_additional_special_tokens:
-            word_emb = model_weights["embeddings.word_embeddings.weight"]
-            embed_size = word_emb.size(1)
-            additional_embs = [torch.rand(1, embed_size) for _ in range(num_additional_special_tokens)]
-            model_weights["embeddings.word_embeddings.weight"] = torch.cat([word_emb] + additional_embs, dim=0)
-
         config = LukeConfig(
             entity_vocab_size=self.metadata["entity_vocab_size"],
             bert_model_name=self.metadata["bert_model_name"],
@@ -96,6 +90,13 @@ class PretrainedLukeEmbedder(TokenEmbedder):
 
         self.luke_model = LukeModel(config)
         self.luke_model.load_state_dict(model_weights, strict=False)
+
+        if num_additional_special_tokens:
+            word_emb = self.luke_model.embeddings.word_embeddings.weight
+            embed_size = word_emb.size(1)
+            additional_embs = [torch.rand(1, embed_size) for _ in range(num_additional_special_tokens)]
+            augmented_weight = torch.nn.Parameter(torch.cat([word_emb] + additional_embs, dim=0))
+            self.luke_model.embeddings.word_embeddings.weight = augmented_weight
 
         if not train_parameters:
             for param in self.transformer_model.parameters():
