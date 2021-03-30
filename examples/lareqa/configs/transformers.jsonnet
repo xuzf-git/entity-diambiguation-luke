@@ -17,7 +17,7 @@ base + {
                 "token_embedders": {
                     "tokens": {
                         "type": "pretrained_transformer",
-                        "model_name": bert_model_name
+                        "model_name": transformers_model_name
                     }
                 }
             },
