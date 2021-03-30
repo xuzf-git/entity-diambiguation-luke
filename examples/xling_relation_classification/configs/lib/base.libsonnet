@@ -34,6 +34,9 @@ local token_indexers = {
         "cuda_device": -1,
         "grad_norm": 5,
         "num_epochs": num_epochs,
+        "checkpointer": {
+            "num_serialized_models_to_keep": 0
+        },
         "optimizer": {
             "type": "adamw",
             "lr": 2e-5,
