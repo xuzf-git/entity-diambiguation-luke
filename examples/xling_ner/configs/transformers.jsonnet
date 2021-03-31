@@ -1,4 +1,4 @@
-local bert_model_name = std.extVar("BERT_MODEL_NAME");
+local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
 
 local base = import "lib/base.libsonnet";
 
@@ -10,7 +10,7 @@ base + {
             "token_embedders": {
                 "tokens": {
                     "type": "pretrained_transformer",
-                        "model_name": bert_model_name
+                        "model_name": transformers_model_name
                     }
                 }
             },
