@@ -39,7 +39,7 @@ local token_indexers = {
         "checkpointer": {
             "num_serialized_models_to_keep": 0
         },
-        "validation_metric": "-loss",
+        "validation_metric": "+mAP",
         "optimizer": {
             "type": "adamw",
             "lr": 2e-5,
