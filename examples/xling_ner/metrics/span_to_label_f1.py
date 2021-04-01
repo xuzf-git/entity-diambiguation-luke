@@ -33,13 +33,13 @@ class SpanToLabelF1(Metric):
             gold = gold.tolist()
             scores = scores.tolist()
             spans = spans.tolist()
-            for p, g, s, span in zip(pred, gold, scores, spans):
+            for p, g, score, span in zip(pred, gold, scores, spans):
                 if g == -1:
                     continue
                 p = vocab.get_token_from_index(p, namespace="labels")
                 g = vocab.get_token_from_index(g, namespace="labels")
 
-                self.prediction[id_].append((s, span, p))
+                self.prediction[id_].append((score, span, p))
                 self.gold_labels[id_].append((0, span, g))
 
     def reset(self):

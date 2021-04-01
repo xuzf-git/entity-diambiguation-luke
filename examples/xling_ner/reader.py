@@ -43,6 +43,17 @@ def parse_conll_ner_data(input_file: str, encoding: str = "utf-8"):
         raise Exception("The specified encoding seems wrong. Try either ISO-8859-1 or utf-8.") from e
 
 
+def check_add_prefix_space(tokenizer: Tokenizer):
+    """
+    Because tokenization is performed on words,
+    some tokenizers need add_prefix_space option to preserve word boundaries.
+    """
+    if isinstance(tokenizer, PretrainedTransformerTokenizer):
+        transformer_tokenizer = tokenizer.tokenizer
+        if hasattr(transformer_tokenizer, "add_prefix_space"):
+            assert transformer_tokenizer.add_prefix_space
+
+
 @DatasetReader.register("conll_exhaustive")
 class ConllExhaustiveReader(DatasetReader):
     def __init__(
@@ -57,10 +68,11 @@ class ConllExhaustiveReader(DatasetReader):
         **kwargs,
     ):
         super().__init__(**kwargs)
-
+        check_add_prefix_space(tokenizer)
         self.tokenizer = tokenizer
         self.token_indexers = token_indexers
 
+        self.max_sequence_length = max_sequence_length
         self.max_num_subwords = max_sequence_length - 2  # take the number of Special tokens into account
         self.max_entity_length = max_entity_length
         self.max_mention_length = max_mention_length
@@ -113,6 +125,7 @@ class ConllExhaustiveReader(DatasetReader):
         for n in range(len(subword_sentence_boundaries) - 1):
             # process (sub) words
             doc_sent_start, doc_sent_end = subword_sentence_boundaries[n : n + 2]
+            assert doc_sent_end - doc_sent_start < self.max_num_subwords
 
             left_length = doc_sent_start
             right_length = len(subwords) - doc_sent_end
