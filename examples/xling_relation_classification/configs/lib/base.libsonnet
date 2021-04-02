@@ -55,7 +55,7 @@ local token_indexers = {
         },
         "learning_rate_scheduler": {
             "type": "linear_with_warmup",
-            "warmup_steps": num_steps_per_epoch * num_epochs / 10
+            "warmup_steps": std.floor(num_steps_per_epoch * num_epochs / 10)
         },
         "num_gradient_accumulation_steps": accumulation_steps,
         "patience": 3,
