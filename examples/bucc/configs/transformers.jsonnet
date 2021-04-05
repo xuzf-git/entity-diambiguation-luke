@@ -1,6 +1,23 @@
 local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
 local model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
 
+local layer_index = std.parseInt(std.extVar("LAYER_INDEX"));
+
+local last_layer_embedder = {
+                    "type": "pretrained_transformer",
+                    "model_name": model_name
+};
+
+local intermediate_embedder = {
+                    "type": "intermediate_pretrained_transformer",
+                    "model_name": model_name,
+                    "layer_index": layer_index
+};
+
+local embedder = if layer_index == -1
+    then last_layer_embedder
+    else intermediate_embedder;
+
 {
     "dataset_reader": {
        "type": "bucc",
@@ -17,10 +34,7 @@ local model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
         "embedder": {
             "type": "basic",
             "token_embedders": {
-                "tokens": {
-                    "type": "pretrained_transformer",
-                    "model_name": model_name
-                }
+                "tokens": embedder
             }
         },
         "averaged": true
