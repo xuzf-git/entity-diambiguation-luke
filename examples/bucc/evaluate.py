@@ -38,7 +38,7 @@ def extract_sentence_embeddings(data_loader, model, device: torch.device, debug:
     return sentence_embeddings, indices
 
 
-def sharding(iterable, sharding_size: int = 65536):
+def sharding(iterable, sharding_size: int = 8192):
     l = len(iterable)
     for ndx in range(0, l, sharding_size):
         yield iterable[ndx : min(ndx + sharding_size, l)]
@@ -53,6 +53,8 @@ def sharding(iterable, sharding_size: int = 65536):
 @click.option("--scoring-function", default="cosine")
 @click.option("--retriever", default="margin")
 @click.option("--cuda-device", default=-1)
+@click.option("--scoring-sharding-size", type=int, default=64)
+@click.option("--retrieval-sharding-size", type=int, default=8192)
 @click.option("--debug", is_flag=True)
 @click.option("--overrides", type=str, default=None)
 @torch.no_grad()
@@ -65,6 +67,8 @@ def evaluate_bucc(
     scoring_function: str,
     retriever: str,
     cuda_device: int,
+    scoring_sharding_size: int,
+    retrieval_sharding_size: int,
     debug: bool,
     overrides: str,
 ):
@@ -122,11 +126,13 @@ def evaluate_bucc(
     )
 
     logger.info("Calculating scores...")
-    scoring_function = ScoringFunction.by_name(scoring_function)()
+    scoring_function = ScoringFunction.by_name(scoring_function)(sharding_size=scoring_sharding_size)
     retriever = Retriever.by_name(retriever)()
     all_prediction = []
     all_max_scores = []
-    for source_embedding_shard, source_indices_shard in zip(sharding(source_embeddings), sharding(source_indices)):
+    for source_embedding_shard, source_indices_shard in zip(
+        sharding(source_embeddings, retrieval_sharding_size), sharding(source_indices, retrieval_sharding_size)
+    ):
         scores = scoring_function(source_embedding_shard, target_embeddings)
 
         max_scores, retrieved_indices = retriever(scores)
