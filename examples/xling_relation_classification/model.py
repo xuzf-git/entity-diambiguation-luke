@@ -7,7 +7,7 @@ from allennlp.models import Model
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy
-from examples.utils.luke_embedder import PretrainedLukeEmbedder
+from examples.utils.embedders.luke_embedder import PretrainedLukeEmbedder
 
 from .metrics.multiway_f1 import MultiwayF1
 
