@@ -7,7 +7,7 @@ import sys
 
 sys.path.append("./")
 
-from examples.bucc.reader import parse_bucc_file, read_gold_sentence_pairs
+from examples.bucc.reader import read_gold_sentence_pairs
 from examples.utils.retrieval.scoring_functions import ScoringFunction
 from examples.utils.retrieval.retrievers import Retriever
 from examples.utils.retrieval.metrics import compute_f1_score
@@ -52,6 +52,7 @@ def sharding(iterable, sharding_size: int = 8192):
 @click.option("--output-file", default=None)
 @click.option("--scoring-function", default="cosine")
 @click.option("--retriever", default="simple")
+@click.option("--backward", is_flag=True)
 @click.option("--cuda-device", default=-1)
 @click.option("--scoring-sharding-size", type=int, default=512)
 @click.option("--retrieval-sharding-size", type=int, default=8192)
@@ -66,6 +67,7 @@ def evaluate_bucc(
     output_file: str,
     scoring_function: str,
     retriever: str,
+    backward: bool,
     cuda_device: int,
     scoring_sharding_size: int,
     retrieval_sharding_size: int,
@@ -128,22 +130,49 @@ def evaluate_bucc(
     logger.info("Calculating scores...")
     scoring_function = ScoringFunction.by_name(scoring_function)(sharding_size=scoring_sharding_size)
     retriever = Retriever.by_name(retriever)()
-    all_prediction = []
-    all_max_scores = []
+
+    forward_prediction = []
+    forward_scores = []
     for source_embedding_shard, source_sentences_shard in zip(
         sharding(source_embeddings, retrieval_sharding_size), sharding(source_sentences, retrieval_sharding_size)
     ):
         scores = scoring_function(source_embedding_shard, target_embeddings)
 
         max_scores, retrieved_indices = retriever(scores)
-        all_max_scores += max_scores.tolist()
+        forward_scores += max_scores.tolist()
         retrieved_target_sentences = [target_sentences[i] for i in retrieved_indices]
-        all_prediction += [(src, tgt) for src, tgt in zip(source_sentences_shard, retrieved_target_sentences)]
+        forward_prediction += [(src, tgt) for src, tgt in zip(source_sentences_shard, retrieved_target_sentences)]
 
-    sorted_predictions = reversed(sorted(zip(all_max_scores, all_prediction)))
-    filtered_prediction = [src_tgt for _, src_tgt in sorted_predictions][: len(gold_sentence_pairs)]
+    if backward:
+        backward_prediction = []
+        backward_scores = []
+        for target_embedding_shard, target_sentences_shard in zip(
+            sharding(target_embeddings, retrieval_sharding_size), sharding(target_sentences, retrieval_sharding_size)
+        ):
+            scores = scoring_function(target_embedding_shard, source_embeddings)
+
+            max_scores, retrieved_indices = retriever(scores)
+            backward_scores += max_scores.tolist()
+            retrieved_source_sentences = [source_sentences[i] for i in retrieved_indices]
+            backward_prediction += [(src, tgt) for tgt, src in zip(target_sentences_shard, retrieved_source_sentences)]
+
+        # take intersection
+        final_prediction = []
+        final_scores = []
+        backward_prediction = set(backward_prediction)
+        for pred, score in zip(forward_prediction, forward_scores):
+            if pred in backward_prediction:
+                final_prediction.append(pred)
+                final_scores.append(score)
+
+    else:
+        final_prediction = forward_prediction
+        final_scores = forward_scores
+
+    sorted_predictions = reversed(sorted(zip(final_scores, final_prediction)))
+    filtered_prediction = [prediction for _, prediction in sorted_predictions][: len(gold_sentence_pairs)]
     metrics = compute_f1_score(prediction=filtered_prediction, gold=gold_sentence_pairs)
-    retrieve_all_metrics = compute_f1_score(prediction=all_prediction, gold=gold_sentence_pairs)
+    retrieve_all_metrics = compute_f1_score(prediction=final_prediction, gold=gold_sentence_pairs)
     logger.info("metrics")
     logger.info(metrics)
     logger.info("retrieve_all_metrics")
@@ -151,7 +180,8 @@ def evaluate_bucc(
 
     if output_file is not None:
         prediction_dict_list = [
-            {"source": src, "target": tgt, "score": score} for (src, tgt), score in zip(all_prediction, all_max_scores)
+            {"source": src, "target": tgt, "score": score}
+            for (src, tgt), score in zip(final_prediction, final_scores)
         ]
         result_dict = {
             "prediction": prediction_dict_list,
