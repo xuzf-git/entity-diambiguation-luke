@@ -1,3 +1,4 @@
+from typing import List
 import torch
 from allennlp.data import TextFieldTensors, Vocabulary
 from allennlp.modules import TextFieldEmbedder
@@ -25,16 +26,37 @@ def masked_mean_pooling(embedding_sequence: torch.Tensor, mask: torch.Tensor):
     return mean_pooled_embeddings
 
 
+def get_last_indices_from_mask(mask: torch.Tensor) -> List[int]:
+    last_index = []
+    for m in mask:
+        zero_indices = (m == 0).nonzero(as_tuple=True)[0]
+        if len(zero_indices) == 0:
+            index = -1
+        else:
+            index = (zero_indices[0] - 1).item()
+        last_index.append(index)
+    return last_index
+
+
 @Seq2VecEncoder.register("boe")
 class BoeEncoder(Seq2VecEncoder):
-    def __init__(self, vocab: Vocabulary, embedder: TextFieldEmbedder, averaged: bool = False) -> None:
+    def __init__(
+        self, vocab: Vocabulary, embedder: TextFieldEmbedder, averaged: bool = False, mask_first_and_last: bool = False
+    ) -> None:
         super().__init__(vocab=vocab)
         self.embedder = embedder
         self.averaged = averaged
+        self.mask_first_and_last = mask_first_and_last
 
     def forward(self, tokens: TextFieldTensors) -> torch.Tensor:
         embedding_sequence = self.embedder(tokens)
         mask = util.get_text_field_mask(tokens)
+
+        if self.mask_first_and_last:
+            last_indices = get_last_indices_from_mask(mask)
+            batch_size = mask.size(0)
+            mask[range(batch_size), last_indices] = 0
+            mask[:, 0] = 0
 
         if self.averaged:
             return masked_mean_pooling(embedding_sequence, mask)
