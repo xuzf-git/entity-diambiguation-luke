@@ -7,7 +7,7 @@ import sys
 
 sys.path.append("./")
 
-from examples.bucc.reader import parse_bucc_file
+from examples.bucc.reader import parse_bucc_file, read_gold_sentence_pairs
 from examples.utils.retrieval.scoring_functions import ScoringFunction
 from examples.utils.retrieval.retrievers import Retriever
 from examples.utils.retrieval.metrics import compute_f1_score
@@ -25,17 +25,17 @@ logger = logging.getLogger(__name__)
 
 def extract_sentence_embeddings(data_loader, model, device: torch.device, debug: bool = False):
     sentence_embeddings = []
-    indices = []
+    sentences = []
     for batch in tqdm.tqdm(data_loader):
         batch = nn_util.move_to_device(batch, device)
-        indices += batch.pop("index")
+        sentences += batch.pop("sentence")
         if debug:
             sentence_embeddings.append(torch.rand(len(batch), 1))
         else:
             output_embeddings = model(**batch).detach()
             sentence_embeddings.append(output_embeddings)
     sentence_embeddings = torch.cat(sentence_embeddings, dim=0)
-    return sentence_embeddings, indices
+    return sentence_embeddings, sentences
 
 
 def sharding(iterable, sharding_size: int = 8192):
@@ -114,14 +114,14 @@ def evaluate_bucc(
     source_model.to(device)
     target_model.to(device)
 
-    gold_indices = [idx_pair for idx_pair in parse_bucc_file(bucc_gold_data_path)]
+    gold_sentence_pairs = read_gold_sentence_pairs(bucc_source_data_path, bucc_target_data_path, bucc_gold_data_path)
 
     logger.info("Extracting embeddings from source...")
-    source_embeddings, source_indices = extract_sentence_embeddings(
+    source_embeddings, source_sentences = extract_sentence_embeddings(
         source_data_loader, source_model, device=device, debug=debug
     )
     logger.info("Extracting embeddings from target...")
-    target_embeddings, target_indices = extract_sentence_embeddings(
+    target_embeddings, target_sentences = extract_sentence_embeddings(
         target_data_loader, target_model, device=device, debug=debug
     )
 
@@ -130,20 +130,20 @@ def evaluate_bucc(
     retriever = Retriever.by_name(retriever)()
     all_prediction = []
     all_max_scores = []
-    for source_embedding_shard, source_indices_shard in zip(
-        sharding(source_embeddings, retrieval_sharding_size), sharding(source_indices, retrieval_sharding_size)
+    for source_embedding_shard, source_sentences_shard in zip(
+        sharding(source_embeddings, retrieval_sharding_size), sharding(source_sentences, retrieval_sharding_size)
     ):
         scores = scoring_function(source_embedding_shard, target_embeddings)
 
         max_scores, retrieved_indices = retriever(scores)
         all_max_scores += max_scores.tolist()
-        retrieved_target_indices = [target_indices[i] for i in retrieved_indices]
-        all_prediction += [(src, tgt) for src, tgt in zip(source_indices_shard, retrieved_target_indices)]
+        retrieved_target_sentences = [target_sentences[i] for i in retrieved_indices]
+        all_prediction += [(src, tgt) for src, tgt in zip(source_sentences_shard, retrieved_target_sentences)]
 
     sorted_predictions = reversed(sorted(zip(all_max_scores, all_prediction)))
-    filtered_prediction = [src_tgt for _, src_tgt in sorted_predictions][: len(gold_indices)]
-    metrics = compute_f1_score(prediction=filtered_prediction, gold=gold_indices)
-    retrieve_all_metrics = compute_f1_score(prediction=all_prediction, gold=gold_indices)
+    filtered_prediction = [src_tgt for _, src_tgt in sorted_predictions][: len(gold_sentence_pairs)]
+    metrics = compute_f1_score(prediction=filtered_prediction, gold=gold_sentence_pairs)
+    retrieve_all_metrics = compute_f1_score(prediction=all_prediction, gold=gold_sentence_pairs)
     logger.info("metrics")
     logger.info(metrics)
     logger.info("retrieve_all_metrics")
