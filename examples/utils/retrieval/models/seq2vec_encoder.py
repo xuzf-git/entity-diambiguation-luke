@@ -1,8 +1,5 @@
-from typing import Dict
 import torch
-import torch.nn as nn
 from allennlp.data import TextFieldTensors
-from allennlp.modules import TextFieldEmbedder
 from allennlp.models import Model
 
 

@@ -22,7 +22,7 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         gradient_checkpointing: bool = False,
         num_special_mask_embeddings: int = None,
         output_entity_embeddings: bool = False,
-            num_additional_special_tokens: int = None
+        num_additional_special_tokens: int = None,
     ) -> None:
         """
 

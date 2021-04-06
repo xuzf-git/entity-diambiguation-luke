@@ -11,5 +11,8 @@ class IntermediatePretrainedTransformerEmbedder(PretrainedTransformerEmbedder):
         initial_scalar_parameters[layer_index] = 0
 
         self._scalar_mix = ScalarMix(
-            self.config.num_hidden_layers, initial_scalar_parameters=initial_scalar_parameters, trainable=False
+            self.config.num_hidden_layers,
+            initial_scalar_parameters=initial_scalar_parameters,
+            trainable=False,
+            do_layer_norm=False,
         )
