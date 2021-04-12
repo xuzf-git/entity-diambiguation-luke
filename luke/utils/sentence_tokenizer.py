@@ -1,6 +1,7 @@
 from typing import List, Tuple
 import pkg_resources
 
+
 class SentenceTokenizer:
     """ Base class for all sentence tokenizers in this project."""
 

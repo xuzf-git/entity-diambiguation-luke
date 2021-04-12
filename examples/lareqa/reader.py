@@ -9,9 +9,10 @@ from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data import DatasetReader, Instance, Tokenizer, TokenIndexer, Token
 from allennlp.data.fields import MetadataField, TextField, ArrayField
 
-from luke.utils.sentence_tokenizer import SentenceTokenizer, ICUSentenceTokenizer
+from luke.utils.sentence_tokenizer import SentenceTokenizer
+from .utils.sentence_breaker import SQuADSentenceTokenizer
 
-from .utils import WikiMentionDetector
+from .utils.wiki_mention_detector import WikiMentionDetector
 
 
 class LAReQAParser:
@@ -19,7 +20,7 @@ class LAReQAParser:
         assert mode in {"lareqa", "squad"}
 
         self.mode = mode
-        self.sentence_splitter = sentence_splitter or ICUSentenceTokenizer()
+        self.sentence_splitter = sentence_splitter or SQuADSentenceTokenizer()
 
     def __call__(self, file_path: str):
         data = json.load(open(file_path, "r"))
@@ -76,7 +77,8 @@ class LAReQAReader(DatasetReader):
         tokenizer: Tokenizer,
         token_indexers: Dict[str, TokenIndexer],
         mode: str = "lareqa",
-        max_sequence_length: int = 512,
+        max_query_length: int = 128,
+        max_answer_length: int = 512,
         wiki_mention_detector: WikiMentionDetector = None,
         enable_type_ids: bool = True,
         **kwargs,
@@ -86,7 +88,8 @@ class LAReQAReader(DatasetReader):
         self.token_indexers = token_indexers
         self.parser = LAReQAParser(mode=mode)
 
-        self.max_sequence_length = max_sequence_length
+        self.max_query_length = max_query_length
+        self.max_answer_length = max_answer_length
 
         self.wiki_mention_detector = wiki_mention_detector
         if self.wiki_mention_detector is not None:
@@ -117,8 +120,8 @@ class LAReQAReader(DatasetReader):
 
         answer_context_tokens = answer_tokens + context_tokens
         fields = {
-            "question": TextField(question_tokens, self.token_indexers),
-            "answer": TextField(answer_context_tokens, self.token_indexers),
+            "question": TextField(question_tokens[:self.max_query_length], self.token_indexers),
+            "answer": TextField(answer_context_tokens[:self.max_answer_length], self.token_indexers),
             "ids": MetadataField(idx),
         }
 
@@ -157,11 +160,4 @@ class LAReQAReader(DatasetReader):
 
             for question_answer_pair in self.parser(file_path):
                 instance = self.text_to_instance(**question_answer_pair, language=language)
-
-                if (
-                    len(instance["answer"]) > self.max_sequence_length
-                    or len(instance["question"]) > self.max_sequence_length
-                ):
-                    continue
-
                 yield instance
