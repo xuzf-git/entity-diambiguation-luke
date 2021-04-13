@@ -3,6 +3,7 @@ from typing import List
 import numpy as np
 import torch
 from allennlp.training.metrics import Metric
+from collections import Counter
 
 from examples.utils.retrieval.scoring_functions import ScoringFunction, CosineSimilarity
 
@@ -52,6 +53,8 @@ class MeanAveragePrecision(Metric):
             top_k_ids = [self.target_ids[int(i)] for i in top_k_indices]
             retrieved_top_k_ids.append(top_k_ids)
 
+        target_ids_counter = Counter(self.target_ids)
+
         scores_for_each_query: List[float] = []
         for q_id, retrieved_ids in zip(self.query_ids, retrieved_top_k_ids):
             score = 0.0
@@ -60,7 +63,7 @@ class MeanAveragePrecision(Metric):
                 is_correct = int(q_id == retrieved_id)
                 num_correct += is_correct
                 score += (num_correct / num_total) * is_correct
-            score = score / self.k
+            score = score / target_ids_counter[q_id]
             scores_for_each_query.append(score)
 
         overall_score = np.mean(scores_for_each_query)
