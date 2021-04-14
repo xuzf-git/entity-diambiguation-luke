@@ -80,7 +80,7 @@ class LAReQAReader(DatasetReader):
         max_query_length: int = 128,
         max_answer_length: int = 512,
         wiki_mention_detector: WikiMentionDetector = None,
-        enable_type_ids: bool = True,
+        use_segment_type_id: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -97,7 +97,7 @@ class LAReQAReader(DatasetReader):
                 raise ValueError("WikiMentionDetector is only compatible with PretrainedTransformerTokenizer.")
             self.wiki_mention_detector.set_tokenizer(tokenizer.tokenizer)
 
-        self.enable_type_ids = enable_type_ids
+        self.use_segment_type_id = use_segment_type_id
 
     def text_to_instance(
         self, question: str, answer: str, context_paragraph: List[str], idx: str, title: str, language: str = None
@@ -114,7 +114,7 @@ class LAReQAReader(DatasetReader):
 
         context_tokens = list(itertools.chain(*context_tokens))
 
-        if self.enable_type_ids:
+        if self.use_segment_type_id:
             for token in context_tokens:
                 token.type_id = 1
 
