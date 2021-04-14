@@ -45,7 +45,7 @@ class MeanAveragePrecision(Metric):
         target_embeddings = torch.cat(self.target_embeddings, dim=0)
 
         similarity_scores = self.scoring_function(query_embeddings, target_embeddings)
-        if self.k is not None:
+        if self.k is None:
             # when k is unspecified, consider all the target embeddings
             k = similarity_scores.size(0)
         else:
