@@ -1,7 +1,7 @@
 local seed = std.parseInt(std.extVar("SEED"));
 local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
 local accumulation_steps = std.parseInt(std.extVar("ACCUMULATION_STEPS"));
-local train_data_path = std.extVar("TRAINE_DATA_PATH");
+local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
 local num_epochs = std.parseInt(std.extVar("NUM_EPOCHS"));
