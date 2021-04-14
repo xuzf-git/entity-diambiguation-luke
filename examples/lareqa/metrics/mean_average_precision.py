@@ -51,7 +51,7 @@ class MeanAveragePrecision(Metric):
         else:
             k = min(similarity_scores.size(1), self.k)
 
-        retrieved_top_k_indices = torch.argsort(similarity_scores, dim=1, descending=True)[:, k]
+        retrieved_top_k_indices = torch.argsort(similarity_scores, dim=1, descending=True)[:, :k]
 
         retrieved_top_k_ids: List[List[str]] = []
         for top_k_indices in retrieved_top_k_indices:
