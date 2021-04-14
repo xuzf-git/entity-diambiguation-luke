@@ -119,18 +119,25 @@ class LAReQAReader(DatasetReader):
                 token.type_id = 1
 
         answer_context_tokens = answer_tokens + context_tokens
-        fields = {
-            "question": TextField(question_tokens[:self.max_query_length], self.token_indexers),
-            "answer": TextField(answer_context_tokens[:self.max_answer_length], self.token_indexers),
-            "ids": MetadataField(idx),
-        }
 
+        fields = {}
+        max_query_length = self.max_query_length
+        max_answer_length = self.max_answer_length
         if self.wiki_mention_detector is not None:
             answer_entity_fields = self.get_entity_features(answer_context_tokens, title, language=language)
             fields.update({"answer_" + k: v for k, v in answer_entity_fields.items()})
 
             question_entity_fields = self.get_entity_features(question_tokens, title, language=language)
             fields.update({"question_" + k: v for k, v in question_entity_fields.items()})
+
+            max_answer_length -= answer_entity_fields["entity_ids"]
+            max_query_length -= question_entity_fields["entity_ids"]
+
+        fields = {
+            "question": TextField(question_tokens[:max_query_length], self.token_indexers),
+            "answer": TextField(answer_context_tokens[:max_answer_length], self.token_indexers),
+            "ids": MetadataField(idx),
+        }
 
         return Instance(fields)
 
