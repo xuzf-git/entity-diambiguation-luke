@@ -10,7 +10,7 @@ from examples.utils.retrieval.scoring_functions import ScoringFunction, CosineSi
 
 @Metric.register("retrieval_mAP")
 class MeanAveragePrecision(Metric):
-    def __init__(self, k: int, scoring_function: ScoringFunction = CosineSimilarity()):
+    def __init__(self, k: int = None, scoring_function: ScoringFunction = CosineSimilarity()):
         self.k = k
         self.scoring_function = scoring_function
 
@@ -45,8 +45,13 @@ class MeanAveragePrecision(Metric):
         target_embeddings = torch.cat(self.target_embeddings, dim=0)
 
         similarity_scores = self.scoring_function(query_embeddings, target_embeddings)
-        k = min(similarity_scores.size(1), self.k)
-        _, retrieved_top_k_indices = torch.topk(similarity_scores, k=k, dim=1)
+        if self.k is not None:
+            # when k is unspecified, consider all the target embeddings
+            k = similarity_scores.size(0)
+        else:
+            k = min(similarity_scores.size(1), self.k)
+
+        retrieved_top_k_indices = torch.argsort(similarity_scores, dim=1, descending=True)[:k]
 
         retrieved_top_k_ids: List[List[str]] = []
         for top_k_indices in retrieved_top_k_indices:
