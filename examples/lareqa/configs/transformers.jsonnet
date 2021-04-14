@@ -23,7 +23,6 @@ base + {
             },
         },
         "criterion": {"type": "in-batch_softmax"},
-        "evaluate_top_k": 11,
         "normalize_embeddings": true
     }
 }

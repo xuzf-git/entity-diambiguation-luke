@@ -21,7 +21,7 @@ local token_indexers = {
        "token_indexers": token_indexers},
     "validation_dataset_reader": {
        "type": "lareqa",
-       "mode": "lareqa",
+       "mode": "squad",
        "tokenizer": tokenizer,
        "token_indexers": token_indexers},
     "train_data_path": train_data_path,

@@ -24,8 +24,8 @@ class DualEncoder(Model):
         vocab: Vocabulary,
         encoder: Seq2VecEncoder,
         criterion: EmbeddingSimilarityLoss,
-        evaluate_top_k: int = 1,
-        initial_similarity_scale: float = 1.0,
+        evaluate_top_k: int = 20,
+        initial_similarity_scale: float = 16.0,
         normalize_embeddings: bool = True,
     ):
         super().__init__(vocab=vocab)
