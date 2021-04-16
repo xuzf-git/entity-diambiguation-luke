@@ -26,7 +26,7 @@ import glob
 import json
 
 from absl import logging
-import examples.tydi_qa.tydiqa.baseline.data_utils as data_utils
+import examples.tydi_qa.utils.data_utils as data_utils
 
 
 def create_entry_from_json(
