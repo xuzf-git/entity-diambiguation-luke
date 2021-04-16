@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from allennlp.data import DatasetReader
 from transformers import AutoTokenizer
 
@@ -66,6 +67,8 @@ class TyDiQAReader(DatasetReader):
         )
         contexts_tokens = self.transformers_tokenizer.convert_ids_to_tokens(contexts_tokenize_result["input_ids"])
         character_offset_mapping = contexts_tokenize_result["offset_mapping"]
+        character_offset_mapping = sanitize_character_offset_mapping(character_offset_mapping)
+
         if answer_type is not None:
             # convert bytes offsets to token indices
             start_char_answer_offset = byte_to_char_offset(contexts, start_byte_answer_offset)
@@ -80,6 +83,7 @@ class TyDiQAReader(DatasetReader):
                     bisect.bisect_right(token_character_start_indices, start_char_answer_offset) - 1
                 )
                 end_token_answer_index = bisect.bisect_left(token_character_end_indices, end_char_answer_offset)
+                assert start_token_answer_index <= end_token_answer_index
 
         # sliding window
         # DOCUMENT PROCESSING
@@ -158,7 +162,7 @@ class TyDiQAReader(DatasetReader):
                     token_to_contexts_byte_mapping.append(token_byte_span)
 
                 instance.add_field(
-                    "cotexts_metadata",
+                    "contexts_metadata",
                     MetadataField(
                         {"contexts": contexts, "token_to_contexts_byte_mapping": token_to_contexts_byte_mapping,}
                     ),
@@ -197,3 +201,14 @@ class TyDiQAReader(DatasetReader):
                     )
 
                 yield instance
+
+
+def sanitize_character_offset_mapping(character_offset_mapping: List[Tuple[int, int]]):
+    """
+    Sentence Piece does not produce correct mapping for tokenized whitespaces ("▁").
+    We replace the incorrect span with (previous span end, next span start).
+    """
+    for i in range(1, len(character_offset_mapping) - 1):
+        if character_offset_mapping[i][0] == character_offset_mapping[i + 1][0]:
+            character_offset_mapping[i] = (character_offset_mapping[i - 1][1], character_offset_mapping[i + 1][0])
+    return character_offset_mapping
