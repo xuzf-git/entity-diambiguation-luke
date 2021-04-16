@@ -22,6 +22,7 @@ class TyDiQAReader(DatasetReader):
         max_passages: int = 45,
         max_position: int = 45,
         max_sequence_length: int = 512,
+        max_question_length: int = 64,
         document_stride: int = 128,
         include_unknowns_probability: float = -1.0,
         is_evaluation: bool = False,
@@ -42,6 +43,7 @@ class TyDiQAReader(DatasetReader):
         }
 
         self.max_sequence_length = max_sequence_length
+        self.max_question_length = max_question_length
         self.document_stride = document_stride
         self.include_unknowns_probability = include_unknowns_probability
         self.is_evaluation = is_evaluation
@@ -56,6 +58,8 @@ class TyDiQAReader(DatasetReader):
     ):
 
         question_tokens = self.transformers_tokenizer.tokenize(question)
+        if len(question_tokens) > self.max_question_length:
+            question_tokens = question_tokens[-self.max_question_length :]
 
         contexts_tokenize_result = self.transformers_tokenizer(
             contexts, return_offsets_mapping=True, add_special_tokens=False
