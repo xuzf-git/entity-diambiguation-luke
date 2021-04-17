@@ -28,7 +28,6 @@ local token_indexers = {
        },
     "train_data_path": train_data_path,
     "validation_data_path": validation_data_path,
-    "vocabulary": {"non_padded_namespaces": ["answer_type"]},
     "data_loader": {
         "batch_size": batch_size, "shuffle": true,
         "num_workers": 0,
