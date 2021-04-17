@@ -183,7 +183,7 @@ class TyDiQAReader(DatasetReader):
             for instance in self.generate_instances_from_texts(
                 example.question,
                 example.contexts,
-                example.answer.type if example.answer else None,
+                example.answer.type if example.answer else AnswerType.UNKNOWN,
                 example.start_byte_offset,
                 example.end_byte_offset,
             ):
