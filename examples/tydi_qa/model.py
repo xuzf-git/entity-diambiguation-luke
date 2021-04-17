@@ -58,9 +58,10 @@ class TransformersQAModel(Model):
         word_ids: TextFieldTensors,
         answer_type: torch.LongTensor,
         answer_span: torch.LongTensor,
-        metadata: List,
+        metadata: List = None,
         **kwargs
     ):
+        import pdb; pdb.set_trace()
         token_embeddings = self.embedder(word_ids)
         if self.encoder is not None:
             token_embeddings = self.encoder(token_embeddings)
@@ -105,7 +106,6 @@ class TransformersQAModel(Model):
             output_dict["answer_type_loss"] += answer_type_loss
 
         return output_dict
-
 
     def get_metrics(self, reset: bool = False):
         return {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}

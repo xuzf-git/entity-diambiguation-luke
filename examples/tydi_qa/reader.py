@@ -162,9 +162,9 @@ class TyDiQAReader(DatasetReader):
                     token_to_contexts_byte_mapping.append(token_byte_span)
 
                 instance.add_field(
-                    "contexts_metadata",
+                    "metadata",
                     MetadataField(
-                        {"contexts": contexts, "token_to_contexts_byte_mapping": token_to_contexts_byte_mapping,}
+                        {"contexts": contexts, "token_to_contexts_byte_mapping": token_to_contexts_byte_mapping}
                     ),
                 )
 
@@ -189,15 +189,12 @@ class TyDiQAReader(DatasetReader):
             ):
                 if self.is_evaluation:
                     instance.add_field("example_metadata", metadata)
-                    instance.add_field(
-                        "plaintext_metadata",
-                        MetadataField(
-                            {
-                                "context_to_plaintext_offset": example.context_to_plaintext_offset,
-                                "plaintext": example.plaintext,
-                                "answer_text": example.answer.text if example.answer else None,
-                            }
-                        ),
+                    instance["metadata"].metadata.update(
+                        {
+                            "context_to_plaintext_offset": example.context_to_plaintext_offset,
+                            "plaintext": example.plaintext,
+                            "answer_text": example.answer.text if example.answer else None,
+                        }
                     )
 
                 yield instance
