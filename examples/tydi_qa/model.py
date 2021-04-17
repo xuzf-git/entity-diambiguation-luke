@@ -61,7 +61,6 @@ class TransformersQAModel(Model):
         metadata: List = None,
         **kwargs
     ):
-        import pdb; pdb.set_trace()
         token_embeddings = self.embedder(word_ids)
         if self.encoder is not None:
             token_embeddings = self.encoder(token_embeddings)
@@ -98,12 +97,12 @@ class TransformersQAModel(Model):
 
             span_loss = self.criterion(flattened_span_start_endscores, flatten_answer_span)
             self.metrics["span_loss"](span_loss.item())
-            output_dict["loss"] += span_loss
+            output_dict["loss"] = span_loss
 
             # predict answer type
             answer_type_loss = self.criterion(answer_type_logits, answer_type)
             self.metrics["answer_type_loss"](span_loss.item())
-            output_dict["answer_type_loss"] += answer_type_loss
+            output_dict["loss"] += answer_type_loss
 
         return output_dict
 
