@@ -30,7 +30,7 @@ local token_indexers = {
     "validation_data_path": validation_data_path,
     "data_loader": {
         "batch_size": batch_size, "shuffle": true,
-        "num_workers": 0,
+        "num_workers": 1,
         "max_instances_in_memory": 50000
     },
     "trainer": {
