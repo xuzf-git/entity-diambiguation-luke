@@ -33,6 +33,9 @@ local token_indexers = {
         "num_workers": 1,
         "max_instances_in_memory": 50000
     },
+     "validation_data_loader": {
+        "batch_size": batch_size, "shuffle": false
+    },
     "trainer": {
         "num_epochs": num_epochs,
         "patience": 3,
