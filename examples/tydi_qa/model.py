@@ -113,6 +113,7 @@ class TransformersQAModel(Model):
             # predict answer type
             answer_type_loss = self.criterion(answer_type_logits, answer_type)
             self.metrics["answer_type_loss"](span_loss.item())
+            self.metrics["answer_type_accuracy"](answer_type_logits, answer_type)
             output_dict["loss"] += answer_type_loss
 
         if not self.training and self.tydi_metric:
