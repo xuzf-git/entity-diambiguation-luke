@@ -80,7 +80,7 @@ class TransformersQAModel(Model):
         # compute logits for answer type prediction
         cls_embeddings = token_embeddings[:, 0]
         answer_type_logits = self.answer_type_classifier(cls_embeddings)
-        answer_type_prediction = answer_type_logits.max()
+        answer_type_prediction = answer_type_logits.argmax(dim=1)
 
         output_dict = {
             "span_start_scores": span_start_scores,
@@ -89,7 +89,8 @@ class TransformersQAModel(Model):
             "span_start_prediction": span_start_prediction,
             "span_end_prediction_score": span_end_prediction_score - span_end_scores[:, 0],
             "span_end_prediction": span_end_prediction,
-            "answer_type_prediction": answer_type_prediction,
+            "answer_type_logits": answer_type_logits,
+            "answer_type_prediction": answer_type_prediction
         }
         if answer_span is not None and answer_type is not None:
             # predict answer span
