@@ -1,18 +1,29 @@
-from typing import List, Tuple
-from allennlp.data import DatasetReader
-from transformers import AutoTokenizer
-
+from typing import List, Tuple, Dict
+import json
 import bisect
 import random
 from collections import namedtuple
 
 from allennlp.data import Instance, Token
+from allennlp.data import DatasetReader
 from allennlp.data.token_indexers import PretrainedTransformerIndexer
 from allennlp.data.fields import TextField, LabelField, SpanField, MetadataField
+
+from transformers import AutoTokenizer
+
 
 from .utils.preproc import read_tydi_examples
 from .utils.data_utils import AnswerType
 from .utils.byte_utils import byte_to_char_offset, char_to_byte_offset
+
+
+def read_passage_answer_candidates(file_path: str) -> Dict[int, List[Dict[str, int]]]:
+    result = {}
+    with open(file_path, "r") as f:
+        for line in f:
+            data = json.loads(line)
+            result[data["example_id"]] = data["passage_answer_candidates"]
+    return result
 
 
 @DatasetReader.register("tydi")
@@ -164,8 +175,11 @@ class TyDiQAReader(DatasetReader):
                 instance.add_field(
                     "metadata",
                     MetadataField(
-                        {"contexts": contexts, "token_to_contexts_byte_mapping": token_to_contexts_byte_mapping,
-                         "document_span_index": document_span_index}
+                        {
+                            "contexts": contexts,
+                            "token_to_contexts_byte_mapping": token_to_contexts_byte_mapping,
+                            "document_span_index": document_span_index,
+                        }
                     ),
                 )
 
@@ -179,6 +193,10 @@ class TyDiQAReader(DatasetReader):
             max_passages=self.max_passages,
             fail_on_invalid=True,
         )
+
+        if self.is_evaluation:
+            passage_answer_candidates = read_passage_answer_candidates(file_path)
+
         for example in tydi_examples:
             metadata = MetadataField({"example_id": str(example.example_id), "language": example.language_id.name})
             for instance in self.generate_instances_from_texts(
@@ -196,6 +214,7 @@ class TyDiQAReader(DatasetReader):
                             "context_to_plaintext_offset": example.context_to_plaintext_offset,
                             "plaintext": example.plaintext,
                             "answer_text": example.answer.text if example.answer else None,
+                            "passage_answer_candidates": passage_answer_candidates[example.example_id],
                         }
                     )
 

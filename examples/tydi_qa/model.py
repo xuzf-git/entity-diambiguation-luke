@@ -8,6 +8,7 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy, Average
 from examples.utils.embedders.luke_embedder import PretrainedLukeEmbedder
+from .metrics.tydi_metric import TyDiMetric
 
 
 @Model.register("transformers_qa")
@@ -26,6 +27,7 @@ class TransformersQAModel(Model):
         dropout: float = 0.1,
         answer_type_name_space: str = "answer_type",
         max_sequence_length: int = 512,
+        prediction_dump_path: str = None,
     ):
 
         super().__init__(vocab=vocab)
@@ -46,8 +48,12 @@ class TransformersQAModel(Model):
             "span_loss": Average(),
             "answer_type_loss": Average(),
             "answer_type_accuracy": CategoricalAccuracy(),
-            "span_accuracy": CategoricalAccuracy()
+            "span_accuracy": CategoricalAccuracy(),
         }
+        if prediction_dump_path:
+            self.tydi_metric = TyDiMetric(prediction_dump_path)
+        else:
+            self.tydi_metric = None
 
     def is_using_luke_with_entity(self) -> bool:
         # check if the token embedder is Luke
@@ -90,7 +96,7 @@ class TransformersQAModel(Model):
             "span_end_prediction_score": span_end_prediction_score - span_end_scores[:, 0],
             "span_end_prediction": span_end_prediction,
             "answer_type_logits": answer_type_logits,
-            "answer_type_prediction": answer_type_prediction
+            "answer_type_prediction": answer_type_prediction,
         }
         if answer_span is not None and answer_type is not None:
             # predict answer span
@@ -109,7 +115,13 @@ class TransformersQAModel(Model):
             self.metrics["answer_type_loss"](span_loss.item())
             output_dict["loss"] += answer_type_loss
 
+        if not self.training and self.tydi_metric:
+            self.tydi_metric(output_dict, metadata)
+
         return output_dict
 
     def get_metrics(self, reset: bool = False):
-        return {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
+        metric_results = {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
+        if self.tydi_metric is not None:
+            metric_results.update(self.tydi_metric.get_metric(reset=True))
+        return metric_results
