@@ -123,5 +123,5 @@ class TransformersQAModel(Model):
     def get_metrics(self, reset: bool = False):
         metric_results = {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
         if self.tydi_metric is not None:
-            metric_results.update(self.tydi_metric.get_metric(reset=True))
+            metric_results.update(self.tydi_metric.get_metric(reset=reset))
         return metric_results

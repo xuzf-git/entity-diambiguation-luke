@@ -78,3 +78,5 @@ class TyDiMetric(Metric):
                     "yes_no_answer": "NONE",
                 }
                 f.write(json.dumps(json_prediction) + "\n")
+
+        return {}
