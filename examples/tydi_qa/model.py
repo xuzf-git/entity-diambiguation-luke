@@ -45,7 +45,8 @@ class TransformersQAModel(Model):
         self.metrics = {
             "span_loss": Average(),
             "answer_type_loss": Average(),
-            "accuracy": CategoricalAccuracy(),
+            "answer_type_accuracy": CategoricalAccuracy(),
+            "span_accuracy": CategoricalAccuracy()
         }
 
     def is_using_luke_with_entity(self) -> bool:
@@ -82,6 +83,8 @@ class TransformersQAModel(Model):
         answer_type_prediction = answer_type_logits.max()
 
         output_dict = {
+            "span_start_scores": span_start_scores,
+            "span_end_scores": span_end_scores,
             "span_start_prediction_score": span_start_prediction_score - span_start_scores[:, 0],
             "span_start_prediction": span_start_prediction,
             "span_end_prediction_score": span_end_prediction_score - span_end_scores[:, 0],
@@ -97,6 +100,7 @@ class TransformersQAModel(Model):
 
             span_loss = self.criterion(flattened_span_start_endscores, flatten_answer_span)
             self.metrics["span_loss"](span_loss.item())
+            self.metrics["span_accuracy"](flattened_span_start_endscores, flatten_answer_span)
             output_dict["loss"] = span_loss
 
             # predict answer type
