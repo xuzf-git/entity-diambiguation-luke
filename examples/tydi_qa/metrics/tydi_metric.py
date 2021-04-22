@@ -20,7 +20,7 @@ class TyDiMetric(Metric):
         self.passage_answer_candidates = {}
         self.prediction_dump_path = prediction_dump_path
 
-    def __init__(self, output_dict: Dict[torch.Tensor], metadata_list: List[Dict]):
+    def __init__(self, output_dict: Dict[str, torch.Tensor], metadata_list: List[Dict]):
 
         prediction_score = (
             output_dict["span_start_prediction_score"] + output_dict["span_end_prediction_score"]
