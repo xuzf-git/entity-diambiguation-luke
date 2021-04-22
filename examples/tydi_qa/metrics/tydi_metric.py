@@ -59,7 +59,7 @@ class TyDiMetric(Metric):
             return {}
 
         with open(self.prediction_dump_path, "w") as f:
-            for exmaple_id, predictions in self.document_predictions.items():
+            for example_id, predictions in self.document_predictions.items():
                 prediction = max(predictions, key=lambda x: x.score)
 
                 passage_idx = self.get_passage_idx(
@@ -67,7 +67,7 @@ class TyDiMetric(Metric):
                 )
 
                 json_prediction = {
-                    "example_id": exmaple_id,
+                    "example_id": example_id,
                     "passage_answer_index": passage_idx,
                     "passage_answer_score": prediction.score,
                     "minimal_answer": {
