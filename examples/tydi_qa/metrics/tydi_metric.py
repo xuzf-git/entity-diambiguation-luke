@@ -36,8 +36,15 @@ class TyDiMetric(Metric):
                 start_byte_offset = end_byte_offset = -1
             else:
                 context_to_plaintext_offset = metadata["context_to_plaintext_offset"]
-                start_byte_offset = context_to_plaintext_offset[contexts_start_byte_offset]
-                end_byte_offset = context_to_plaintext_offset[contexts_end_byte_offset]
+                try:
+                    start_byte_offset = context_to_plaintext_offset[contexts_start_byte_offset]
+                    end_byte_offset = context_to_plaintext_offset[contexts_end_byte_offset]
+                except IndexError:
+                    import warnings
+
+                    example_id = metadata["example_id"]
+                    warnings.warn(f"IndexError happens with {example_id}")
+                    start_byte_offset = end_byte_offset = -1
 
             self.document_predictions[metadata["example_id"]].append(
                 TyDiPrediction(start_byte_offset, end_byte_offset, score)
