@@ -215,6 +215,7 @@ class TyDiQAReader(DatasetReader):
                             "plaintext": example.plaintext,
                             "answer_text": example.answer.text if example.answer else None,
                             "passage_answer_candidates": passage_answer_candidates[example.example_id],
+                            "language": example.language_id.name.lower()
                         }
                     )
 

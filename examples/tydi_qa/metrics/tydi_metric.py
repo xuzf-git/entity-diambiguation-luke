@@ -18,6 +18,7 @@ class TyDiMetric(Metric):
         super().__init__()
         self.document_predictions = defaultdict(list)
         self.passage_answer_candidates = {}
+        self.example_to_language = {}
         self.prediction_dump_path = prediction_dump_path
 
     def __call__(self, output_dict: Dict[str, torch.Tensor], metadata_list: List[Dict]):
@@ -46,10 +47,15 @@ class TyDiMetric(Metric):
                     warnings.warn(f"IndexError happens with {example_id}")
                     start_byte_offset = end_byte_offset = -1
 
+            # sanitize
+            if start_byte_offset == -1 or end_byte_offset == -1 or start_byte_offset > end_byte_offset:
+                start_byte_offset = end_byte_offset = -1
+
             self.document_predictions[metadata["example_id"]].append(
                 TyDiPrediction(start_byte_offset, end_byte_offset, score)
             )
             self.passage_answer_candidates[metadata["example_id"]] = metadata["passage_answer_candidates"]
+            self.example_to_language[metadata["example_id"]] = metadata["language"]
 
     @staticmethod
     def get_passage_idx(start_byte_offset: int, end_byte_offset: int, passage_answer_candidates: List[Dict[str, int]]):
@@ -83,6 +89,7 @@ class TyDiMetric(Metric):
                     },
                     "minimal_answer_score": prediction.score,
                     "yes_no_answer": "NONE",
+                    "language": self.example_to_language[example_id],
                 }
                 f.write(json.dumps(json_prediction) + "\n")
 
