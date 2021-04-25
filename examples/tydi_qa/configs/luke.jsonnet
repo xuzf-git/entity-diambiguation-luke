@@ -17,7 +17,7 @@ base + {
                     "pretrained_metadata_path": pretrained_metadata_path,
                     "entity_vocab_path": entity_vocab_path,
                     "num_special_mask_embeddings": 1,
-                    "tokenizer_kwargs": {"additional_special_tokens": data["extra_tokens"]}
+                    "num_additional_special_tokens": std.length(data["extra_tokens"])
                 }
             }
         },
