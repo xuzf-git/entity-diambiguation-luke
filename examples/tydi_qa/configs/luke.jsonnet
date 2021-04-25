@@ -3,6 +3,7 @@ local pretrained_metadata_path = std.extVar("PRETRAINED_METADATA_PATH");
 local entity_vocab_path = std.extVar("ENTITY_VOCAB_PATH");
 
 local base = import "lib/base.libsonnet";
+local data = import "lib/data.libsonnet";
 
 base + {
     "model": {
