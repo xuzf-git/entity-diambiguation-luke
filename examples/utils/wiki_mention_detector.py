@@ -26,8 +26,9 @@ class WikiMentionDetector(FromParams):
         wiki_link_db_path: str,
         model_redirect_mappings_path: str,
         link_redirect_mappings_path: str,
-        inter_wiki_path: str,
         entity_vocab_path: str,
+        source_language: str = "en",
+        inter_wiki_path: str = None,
         multilingual_entity_db_path: Dict[str, str] = None,
         min_mention_link_prob: float = 0.01,
         max_mention_length: int = 10,
@@ -36,7 +37,12 @@ class WikiMentionDetector(FromParams):
         self.wiki_link_db = WikiLinkDB(wiki_link_db_path)
         self.model_redirect_mappings: Dict[str, str] = joblib.load(model_redirect_mappings_path)
         self.link_redirect_mappings: Dict[str, str] = joblib.load(link_redirect_mappings_path)
-        self.inter_wiki_db = InterwikiDB.load(inter_wiki_path)
+
+        self.source_language = source_language
+        if inter_wiki_path is not None:
+            self.inter_wiki_db = InterwikiDB.load(inter_wiki_path)
+        else:
+            self.inter_wiki_db = None
 
         self.entity_vocab = EntityVocab(entity_vocab_path)
 
@@ -102,16 +108,20 @@ class WikiMentionDetector(FromParams):
         if self.tokenizer is None:
             raise RuntimeError("self.tokenizer is None. Did you call self.set_tokenizer()?")
 
-        en_mention_candidates = self.get_mention_candidates(title)
+        source_mention_candidates = self.get_mention_candidates(title)
 
-        if language == "en":
-            target_mention_candidates = en_mention_candidates
+        if language == self.source_language:
+            target_mention_candidates = source_mention_candidates
         else:
-            en_entities = list(en_mention_candidates.values())
+            if self.inter_wiki_db is None:
+                raise ValueError(
+                    f"You need InterWikiDB to detect mentions from other languages except for {self.source_language}."
+                )
+            source_entities = list(source_mention_candidates.values())
 
             target_entities = []
-            for ent in en_entities:
-                translated_ent = self.inter_wiki_db.get_title_translation(ent, "en", language)
+            for ent in source_entities:
+                translated_ent = self.inter_wiki_db.get_title_translation(ent, self.source_language, language)
                 if translated_ent is not None:
                     target_entities.append(translated_ent)
 
