@@ -84,6 +84,7 @@ class TyDiExample(object):
         answer: Answer = None,
         start_byte_offset: int = None,
         end_byte_offset: int = None,
+            document_title: str = None
     ):
         self.example_id = example_id
 
@@ -110,6 +111,8 @@ class TyDiExample(object):
         self.answer = answer  # type: Answer
         self.start_byte_offset = start_byte_offset
         self.end_byte_offset = end_byte_offset
+
+        self.document_title = document_title
 
 
 def byte_str(text: str) -> bytes:
@@ -300,4 +303,5 @@ def to_tydi_example(entry, is_training):
         answer=answer,
         start_byte_offset=start_byte_offset,
         end_byte_offset=end_byte_offset,
+        document_title=entry["document_title"]
     )

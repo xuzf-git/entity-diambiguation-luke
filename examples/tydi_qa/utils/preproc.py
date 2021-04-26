@@ -172,6 +172,7 @@ def create_entry_from_json(
         "question": question,
         "answer": answer,
         "has_correct_context": annotated_idx in context_idxs,
+        "document_title": json_dict["document_title"],
     }
     all_contexts_with_tokens = []
     # `offset` is a byte offset relative to `contexts` (concatenated candidate
@@ -246,40 +247,6 @@ def get_candidate_type_and_position(json_dict, idx):
         # `add_candidate_types_and_positions`. Note that this key is not present
         # in the original TyDi QA corpus.
         return json_dict["passage_answer_candidates"][idx]["type_and_position"]
-
-
-class InputFeatures(object):
-    """A single set of features of data."""
-
-    def __init__(
-        self,
-        unique_id,
-        example_index,
-        language_id,
-        doc_span_index,
-        wp_start_offset,
-        wp_end_offset,
-        input_ids,
-        input_mask,
-        segment_ids,
-        start_position=None,
-        end_position=None,
-        answer_text="",
-        answer_type=data_utils.AnswerType.MINIMAL,
-    ):
-        self.unique_id = unique_id
-        self.example_index = example_index
-        self.doc_span_index = doc_span_index
-        self.language_id = language_id
-        self.wp_start_offset = wp_start_offset
-        self.wp_end_offset = wp_end_offset
-        self.input_ids = input_ids
-        self.input_mask = input_mask
-        self.segment_ids = segment_ids
-        self.start_position = start_position  # this is a wordpiece index.
-        self.end_position = end_position
-        self.answer_text = answer_text
-        self.answer_type = answer_type
 
 
 def find_nearest_wordpiece_index(offset_index, offset_to_wp, scan_right=True):

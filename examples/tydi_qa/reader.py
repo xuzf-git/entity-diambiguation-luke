@@ -198,7 +198,13 @@ class TyDiQAReader(DatasetReader):
             passage_answer_candidates = read_passage_answer_candidates(file_path)
 
         for example in tydi_examples:
-            metadata = MetadataField({"example_id": str(example.example_id), "language": example.language_id.name})
+            metadata = MetadataField(
+                {
+                    "example_id": str(example.example_id),
+                    "language": example.language_id.name,
+                    "document_title": example.document_title,
+                }
+            )
             for instance in self.generate_instances_from_texts(
                 example.question,
                 example.contexts,
@@ -215,7 +221,7 @@ class TyDiQAReader(DatasetReader):
                             "plaintext": example.plaintext,
                             "answer_text": example.answer.text if example.answer else None,
                             "passage_answer_candidates": passage_answer_candidates[example.example_id],
-                            "language": example.language_id.name.lower()
+                            "language": example.language_id.name.lower(),
                         }
                     )
 
