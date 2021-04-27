@@ -156,7 +156,8 @@ class TyDiQAReader(DatasetReader):
                 + contexts_tokens[doc_start : doc_end + 1]
                 + [self.transformers_tokenizer.sep_token]
             )
-            input_text_field = TextField([Token(t) for t in input_tokens], token_indexers=self.token_indexers)
+            input_tokens = [Token(t) for t in input_tokens]
+            input_text_field = TextField(input_tokens, token_indexers=self.token_indexers)
             assert len(input_text_field) <= self.max_sequence_length
 
             instance = Instance({"word_ids": input_text_field})
