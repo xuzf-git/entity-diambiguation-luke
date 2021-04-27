@@ -3,11 +3,12 @@ import json
 import bisect
 import random
 from collections import namedtuple
+import numpy as np
 
 from allennlp.data import Instance, Token
 from allennlp.data import DatasetReader
 from allennlp.data.token_indexers import PretrainedTransformerIndexer
-from allennlp.data.fields import TextField, LabelField, SpanField, MetadataField
+from allennlp.data.fields import TextField, LabelField, SpanField, MetadataField, ArrayField
 
 from transformers import AutoTokenizer
 
@@ -15,6 +16,22 @@ from transformers import AutoTokenizer
 from .utils.preproc import read_tydi_examples
 from .utils.data_utils import AnswerType
 from .utils.byte_utils import byte_to_char_offset, char_to_byte_offset
+
+from examples.utils.wiki_mention_detector import WikiMentionDetector
+
+LANGUAGE_TO_CODE = {
+    "ARABIC": "ar",
+    "BENGALI": "bn",
+    "ENGLISH": "en",
+    "FINNISH": "fi",
+    "INDONESIAN": "id",
+    "JAPANESE": "ja",
+    "KOREAN": "ko",
+    "RUSSIAN": "ru",
+    "TELUGU": "te",
+    "SWAHILI": "sw",
+    "THAI": "th",
+}
 
 
 def read_passage_answer_candidates(file_path: str) -> Dict[int, List[Dict[str, int]]]:
@@ -38,6 +55,8 @@ class TyDiQAReader(DatasetReader):
         document_stride: int = 128,
         include_unknowns_probability: float = -1.0,
         is_evaluation: bool = False,
+        mention_detectors: Dict[str, WikiMentionDetector] = None,
+        max_num_entity_features: int = 30,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -60,6 +79,9 @@ class TyDiQAReader(DatasetReader):
         self.include_unknowns_probability = include_unknowns_probability
         self.is_evaluation = is_evaluation
 
+        self.mention_detectors = mention_detectors
+        self.max_num_entity_features = max_num_entity_features
+
     def generate_instances_from_texts(
         self,
         question: str,
@@ -67,6 +89,8 @@ class TyDiQAReader(DatasetReader):
         answer_type: AnswerType = None,
         start_byte_answer_offset: int = None,
         end_byte_answer_offset: int = None,
+        title: str = None,
+        language_code: str = None,
     ):
 
         question_tokens = self.transformers_tokenizer.tokenize(question)
@@ -103,6 +127,11 @@ class TyDiQAReader(DatasetReader):
         # 2. [SEP] -- Special separator token, placed after question.
         # 3. [SEP] -- Special separator token, placed after article content.
         max_tokens_for_doc = self.max_sequence_length - len(question_tokens) - 3
+
+        # if we use entity feautures, we need room for them.
+        if self.mention_detectors is not None:
+            max_tokens_for_doc = max_tokens_for_doc - self.max_num_entity_features
+
         DocSpan = namedtuple("DocSpan", ["start", "length"])
         document_spans = []
         document_span_start_token_offset = 0
@@ -152,6 +181,11 @@ class TyDiQAReader(DatasetReader):
                 instance.add_field(
                     "answer_span", SpanField(input_start_answer_index, input_end_answer_index, input_text_field)
                 )
+
+            if self.mention_detectors is not None:
+                assert title is not None and language_code is not None
+                for field_name, field in self.get_entity_features(input_tokens, title=title, language=language_code):
+                    instance.add_field(field_name, field)
 
             if self.is_evaluation:
                 token_to_contexts_byte_mapping = []
@@ -226,6 +260,17 @@ class TyDiQAReader(DatasetReader):
                     )
 
                 yield instance
+
+    def get_entity_features(self, tokens: List[Token], title: str, language: str):
+        assert language is not None
+        mention_detector = self.mention_detectors[language]
+        mentions = mention_detector.detect_mentions(tokens, title, language)[: self.max_num_entity_features]
+        entity_features = mention_detector.mentions_to_entity_features(tokens, mentions)
+
+        entity_feature_fields = {}
+        for name, feature in entity_features.items():
+            entity_feature_fields[name] = ArrayField(np.array(feature), padding_value=0)
+        return entity_feature_fields
 
 
 def sanitize_character_offset_mapping(character_offset_mapping: List[Tuple[int, int]]):
