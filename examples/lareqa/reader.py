@@ -12,7 +12,7 @@ from allennlp.data.fields import MetadataField, TextField, ArrayField
 from luke.utils.sentence_tokenizer import SentenceTokenizer
 from .utils.sentence_breaker import SQuADSentenceTokenizer
 
-from .utils.wiki_mention_detector import WikiMentionDetector
+from examples.utils.wiki_mention_detector import WikiMentionDetector
 
 
 class LAReQAParser:

@@ -80,6 +80,9 @@ class TyDiQAReader(DatasetReader):
         self.is_evaluation = is_evaluation
 
         self.mention_detectors = mention_detectors
+        if self.mention_detectors is not None:
+            for detector in self.mention_detectors.values():
+                detector.set_tokenizer(self.transformers_tokenizer)
         self.max_num_entity_features = max_num_entity_features
 
     def generate_instances_from_texts(
