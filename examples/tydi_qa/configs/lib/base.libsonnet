@@ -9,6 +9,7 @@ local num_steps_per_epoch = std.parseInt(std.extVar("NUM_STEPS_PER_EPOCH"));
 
 local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
 local tokenizer = {"type": "pretrained_transformer", "model_name": transformers_model_name, "add_special_tokens": false};
+
 local token_indexers = {
             "tokens": {"type": "pretrained_transformer", "model_name": transformers_model_name}
     };

@@ -66,8 +66,19 @@ class TransformersQAModel(Model):
         answer_type: torch.LongTensor,
         answer_span: torch.LongTensor,
         metadata: List = None,
+        entity_ids: torch.LongTensor = None,
+        entity_position_ids: torch.LongTensor = None,
+        entity_segment_ids: torch.LongTensor = None,
+        entity_attention_mask: torch.LongTensor = None,
         **kwargs
     ):
+
+        if entity_ids is not None:
+            word_ids["tokens"]["entity_ids"] = entity_ids
+            word_ids["tokens"]["entity_position_ids"] = entity_position_ids
+            word_ids["tokens"]["entity_segment_ids"] = entity_segment_ids
+            word_ids["tokens"]["entity_attention_mask"] = entity_attention_mask
+
         token_embeddings = self.embedder(word_ids)
         if self.encoder is not None:
             token_embeddings = self.encoder(token_embeddings)

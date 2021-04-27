@@ -55,7 +55,7 @@ class TyDiQAReader(DatasetReader):
         document_stride: int = 128,
         include_unknowns_probability: float = -1.0,
         is_evaluation: bool = False,
-        mention_detectors: Dict[str, WikiMentionDetector] = None,
+        mention_detectors: List[WikiMentionDetector] = None,
         max_num_entity_features: int = 30,
         **kwargs,
     ):
@@ -79,10 +79,11 @@ class TyDiQAReader(DatasetReader):
         self.include_unknowns_probability = include_unknowns_probability
         self.is_evaluation = is_evaluation
 
-        self.mention_detectors = mention_detectors
-        if self.mention_detectors is not None:
-            for detector in self.mention_detectors.values():
+        self.mention_detectors = {}
+        if mention_detectors is not None:
+            for detector in mention_detectors:
                 detector.set_tokenizer(self.transformers_tokenizer)
+                self.mention_detectors[detector.source_language] = detector
         self.max_num_entity_features = max_num_entity_features
 
     def generate_instances_from_texts(
