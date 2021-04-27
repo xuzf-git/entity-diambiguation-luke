@@ -133,7 +133,7 @@ class TyDiQAReader(DatasetReader):
         max_tokens_for_doc = self.max_sequence_length - len(question_tokens) - 3
 
         # if we use entity feautures, we need room for them.
-        if self.mention_detectors is not None:
+        if self.mention_detectors:
             max_tokens_for_doc = max_tokens_for_doc - self.max_num_entity_features
 
         DocSpan = namedtuple("DocSpan", ["start", "length"])
@@ -187,7 +187,7 @@ class TyDiQAReader(DatasetReader):
                     "answer_span", SpanField(input_start_answer_index, input_end_answer_index, input_text_field)
                 )
 
-            if self.mention_detectors is not None:
+            if self.mention_detectors:
                 assert title is not None and language_code is not None
                 for field_name, field in self.get_entity_features(
                     input_tokens, title=title, language=language_code
