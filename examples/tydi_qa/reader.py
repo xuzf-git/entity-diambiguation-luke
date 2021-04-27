@@ -272,9 +272,11 @@ class TyDiQAReader(DatasetReader):
             import warnings
 
             warnings.warn(
-                f"{language} not found in self.mention_detectors. "
+                f"``{language}`` not found in self.mention_detectors. "
                 f"No entity features will be added to this language."
             )
+            # it could be anything, but just pick up the first one
+            mention_detector = list(self.mention_detectors.values())[0]
             mentions = []
         else:
             mention_detector = self.mention_detectors[language]
