@@ -268,8 +268,18 @@ class TyDiQAReader(DatasetReader):
 
     def get_entity_features(self, tokens: List[Token], title: str, language: str):
         assert language is not None
-        mention_detector = self.mention_detectors[language]
-        mentions = mention_detector.detect_mentions(tokens, title, language)[: self.max_num_entity_features]
+        if language not in self.mention_detectors:
+            import warnings
+
+            warnings.warn(
+                f"{language} not found in self.mention_detectors. "
+                f"No entity features will be added to this language."
+            )
+            mentions = []
+        else:
+            mention_detector = self.mention_detectors[language]
+            mentions = mention_detector.detect_mentions(tokens, title, language)[: self.max_num_entity_features]
+
         entity_features = mention_detector.mentions_to_entity_features(tokens, mentions)
 
         entity_feature_fields = {}
