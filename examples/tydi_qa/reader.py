@@ -187,7 +187,9 @@ class TyDiQAReader(DatasetReader):
 
             if self.mention_detectors is not None:
                 assert title is not None and language_code is not None
-                for field_name, field in self.get_entity_features(input_tokens, title=title, language=language_code):
+                for field_name, field in self.get_entity_features(
+                    input_tokens, title=title, language=language_code
+                ).items():
                     instance.add_field(field_name, field)
 
             if self.is_evaluation:
