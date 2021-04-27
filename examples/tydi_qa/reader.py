@@ -248,6 +248,8 @@ class TyDiQAReader(DatasetReader):
                 example.answer.type if example.answer else AnswerType.UNKNOWN,
                 example.start_byte_offset,
                 example.end_byte_offset,
+                title=example.document_title,
+                language_code=LANGUAGE_TO_CODE[example.language_id.name],
             ):
                 if self.is_evaluation:
                     instance.add_field("example_metadata", metadata)
