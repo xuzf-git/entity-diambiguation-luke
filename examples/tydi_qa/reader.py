@@ -56,7 +56,7 @@ class TyDiQAReader(DatasetReader):
         include_unknowns_probability: float = -1.0,
         is_evaluation: bool = False,
         mention_detectors: List[WikiMentionDetector] = None,
-        max_num_entity_features: int = 30,
+        max_num_entity_features: int = 128,
         **kwargs,
     ):
         super().__init__(**kwargs)
