@@ -132,10 +132,6 @@ class TyDiQAReader(DatasetReader):
         # 3. [SEP] -- Special separator token, placed after article content.
         max_tokens_for_doc = self.max_sequence_length - len(question_tokens) - 3
 
-        # if we use entity feautures, we need room for them.
-        if self.mention_detectors:
-            max_tokens_for_doc = max_tokens_for_doc - self.max_num_entity_features
-
         DocSpan = namedtuple("DocSpan", ["start", "length"])
         document_spans = []
         document_span_start_token_offset = 0

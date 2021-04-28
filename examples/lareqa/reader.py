@@ -130,9 +130,6 @@ class LAReQAReader(DatasetReader):
             question_entity_fields = self.get_entity_features(question_tokens, title, language=language)
             fields.update({"question_" + k: v for k, v in question_entity_fields.items()})
 
-            max_answer_length -= len(answer_entity_fields["entity_ids"])
-            max_query_length -= len(question_entity_fields["entity_ids"])
-
         fields = {
             "question": TextField(question_tokens[:max_query_length], self.token_indexers),
             "answer": TextField(answer_context_tokens[:max_answer_length], self.token_indexers),
