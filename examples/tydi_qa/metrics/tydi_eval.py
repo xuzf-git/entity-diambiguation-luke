@@ -84,7 +84,6 @@ task, the SQuAD-compatible gold Passage (GoldP) task.
 """
 
 import collections
-import json
 
 from absl import logging
 import examples.tydi_qa.metrics.eval_utils as eval_utils
@@ -266,55 +265,6 @@ def score_answers(
     return passage_answer_stats, minimal_answer_stats
 
 
-def compute_macro_f1(answer_stats, prefix=""):
-    """Computes F1, precision, recall for a list of answer scores.
-
-  This computes the *language-wise macro F1*. For minimal answers,
-  we also compute a partial match score that uses F1, which would be
-  included in this computation via `answer_stats`.
-
-  Args:
-    answer_stats: List of per-example scores.
-    prefix (''): Prefix to prepend to score dictionary.
-
-  Returns:
-    Dictionary mapping measurement names to scores.
-  """
-
-    has_gold, has_pred, f1, _ = list(zip(*answer_stats))
-
-    macro_precision = eval_utils.safe_divide(sum(f1), sum(has_pred))
-    macro_recall = eval_utils.safe_divide(sum(f1), sum(has_gold))
-    macro_f1 = eval_utils.safe_divide(2 * macro_precision * macro_recall, macro_precision + macro_recall)
-
-    return collections.OrderedDict(
-        {
-            prefix + "n": len(answer_stats),
-            prefix + "f1": macro_f1,
-            prefix + "precision": macro_precision,
-            prefix + "recall": macro_recall,
-        }
-    )
-
-
-def compute_final_f1(passage_answer_stats, minimal_answer_stats):
-    """Computes overall F1 given passage and minimal answers, ignoring scores.
-
-  Note: this assumes that the answers have been thresholded based on scores.
-
-  Arguments:
-     passage_answer_stats: List of passage answer scores.
-     minimal_answer_stats: List of minimal answer scores.
-
-
-  Returns:
-     Dictionary of name (string) -> score.
-  """
-    scores = compute_macro_f1(passage_answer_stats, prefix="passage-answer-")
-    scores.update(compute_macro_f1(minimal_answer_stats, prefix="minimal-answer-"))
-    return scores
-
-
 def compute_pr_curves(answer_stats, targets=None):
     """Computes PR curve and returns R@P for specific targets.
 
@@ -393,84 +343,8 @@ def compute_pr_curves(answer_stats, targets=None):
     )
 
 
-def print_r_at_p_table(answer_stats):
-    """Pretty prints the R@P table for default targets."""
-    opt_result, pr_table = compute_pr_curves(answer_stats, targets=[0.5, 0.75, 0.9])
-    f1, precision, recall, threshold = opt_result
-    print("Optimal threshold: {:.5}".format(threshold))
-    print(" F1     /  P      /  R")
-    print("{: >7.2%} / {: >7.2%} / {: >7.2%}".format(f1, precision, recall))
-    for target, recall, precision, row in pr_table:
-        print("R@P={}: {:.2%} (actual p={:.2%}, score threshold={:.4})".format(target, recall, precision, row))
-
-
-def get_metrics_as_dict(gold_path, prediction_path, passage_non_null_threshold, minimal_non_null_threshold):
-    """Library version of the end-to-end evaluation.
-
-  Arguments:
-    gold_path: Path to a single JSONL data. Could be gzipped or not.
-    prediction_path: Path to the JSONL file of prediction data.
-
-  Returns:
-    metrics: A dictionary mapping string names to metric scores.
-  """
-
-    tydi_gold_dict = eval_utils.read_annotation(gold_path)
-    tydi_pred_dict = eval_utils.read_prediction_jsonl(prediction_path)
-
-    passage_answer_stats, minimal_answer_stats = score_answers(
-        tydi_gold_dict, tydi_pred_dict, passage_non_null_threshold, minimal_non_null_threshold
-    )
-
-    return get_metrics_with_answer_stats(passage_answer_stats, minimal_answer_stats)
-
-
-def get_metrics_with_answer_stats(passage_answer_stats, minimal_answer_stats):
-    """Generate metrics dict using passage and minimal answer stats."""
-
-    def _get_metric_dict(answer_stats, prefix=""):
-        """Compute all metrics for a set of answer statistics."""
-        opt_result, pr_table = compute_pr_curves(answer_stats, targets=[0.5, 0.75, 0.9])
-        f1, precision, recall, threshold = opt_result
-        metrics = collections.OrderedDict(
-            {
-                "best-threshold-f1": f1,
-                "best-threshold-precision": precision,
-                "best-threshold-recall": recall,
-                "best-threshold": threshold,
-            }
-        )
-        for target, recall, precision, _ in pr_table:
-            metrics["recall-at-precision>={:.2}".format(target)] = recall
-            metrics["precision-at-precision>={:.2}".format(target)] = precision
-
-        # Add prefix before returning.
-        return dict([(prefix + k, v) for k, v in metrics.items()])
-
-    metrics = _get_metric_dict(passage_answer_stats, "passage-")
-    metrics.update(_get_metric_dict(minimal_answer_stats, "minimal-"))
-    return metrics
-
-
-def get_latex_str(f1, precision, recall):
-    return (
-        "\\fpr"
-        + "{"
-        + ("%.1f" % (f1 * 100))
-        + "}{"
-        + ("%.1f" % (precision * 100))
-        + "}{"
-        + ("%.1f" % (recall * 100))
-        + "}"
-    )
-
-
-def main(
-    gold_path: str,
-    predictions_path: str,
-    passage_non_null_threshold: int = 2,
-    minimal_non_null_threshold: int = 2,
-    pretty_print: bool = False,
+def evaluate_prediction_file(
+    gold_path: str, predictions_path: str, passage_non_null_threshold: int = 2, minimal_non_null_threshold: int = 2,
 ):
 
     tydi_gold_dict = eval_utils.read_annotation(gold_path)
@@ -517,6 +391,8 @@ def main(
         "telugu",
         "thai",
     ]
+
+    results_dict = {l: {} for l in language_list}
     for lang in language_list:
         if lang in per_lang_pred:
             passage_answer_stats, minimal_answer_stats = score_answers(
@@ -530,7 +406,7 @@ def main(
                 macro_avg_passage_scores[0].append(f1)
                 macro_avg_passage_scores[1].append(precision)
                 macro_avg_passage_scores[2].append(recall)
-            print("Passage & " + lang + " & " + get_latex_str(f1, precision, recall))
+            results_dict[lang]["passage"] = {"f1": f1, "precision": precision, "recall": recall}
 
             # Minimal answer span task
             opt_result, _ = compute_pr_curves(minimal_answer_stats, targets=[0.5])
@@ -539,50 +415,22 @@ def main(
                 macro_avg_minimal_scores[0].append(f1)
                 macro_avg_minimal_scores[1].append(precision)
                 macro_avg_minimal_scores[2].append(recall)
-            print("Minimal Answer & " + lang + " & " + get_latex_str(f1, precision, recall))
-
-            if pretty_print:
-                print("*" * 20)
-                print(lang)
-                print("Language: %s (%d)" % (lang, len(per_lang_gold.get(lang, {}))))
-                print("*" * 20)
-                print("PASSAGE ANSWER R@P TABLE:")
-                print_r_at_p_table(passage_answer_stats)
-                print("*" * 20)
-                print("MINIMAL ANSWER R@P TABLE:")
-                print_r_at_p_table(minimal_answer_stats)
-            else:
-                metrics = get_metrics_with_answer_stats(passage_answer_stats, minimal_answer_stats)
-                print(json.dumps(metrics))
-
-    print(
-        "Total # examples in gold: %d, # ex. in pred: %d (including english)"
-        % (len(tydi_gold_dict), len(tydi_pred_dict))
-    )
+            results_dict[lang]["minimal_answer"] = {"f1": f1, "precision": precision, "recall": recall}
 
     f1_list, precision_list, recall_list = macro_avg_passage_scores
-    print("*** Macro Over %d Languages, excluding English **" % len(f1_list))
     avg_passage_f1 = eval_utils.safe_average(f1_list)
     avg_passage_recall = eval_utils.safe_average(recall_list)
     avg_passage_precision = eval_utils.safe_average(precision_list)
-    print("Passage F1:%.3f P:%.3f R:%3f" % (avg_passage_f1, avg_passage_precision, avg_passage_recall))
-    print(get_latex_str(avg_passage_f1, avg_passage_precision, avg_passage_recall))
 
     f1_list, precision_list, recall_list = macro_avg_minimal_scores
 
     avg_minimal_f1 = eval_utils.safe_average(f1_list)
     avg_minimal_recall = eval_utils.safe_average(recall_list)
     avg_minimal_precision = eval_utils.safe_average(precision_list)
-    print("Minimal F1:%.3f P:%.3f R:%3f" % (avg_minimal_f1, avg_minimal_precision, avg_minimal_recall))
-    print(get_latex_str(avg_minimal_f1, avg_minimal_precision, avg_minimal_recall))
-    print("*** / Aggregate Scores ****")
 
-    aggregate_metrics = {
-        "avg_passage_f1": avg_passage_f1,
-        "avg_passage_recall": avg_passage_recall,
-        "avg_passage_precision": avg_passage_precision,
-        "avg_minimal_f1": avg_minimal_f1,
-        "avg_minimal_recall": avg_minimal_recall,
-        "avg_minimal_precision": avg_minimal_precision,
+    results_dict["average"] = {
+        "passage": {"f1": avg_passage_f1, "precision": avg_passage_precision, "recall": avg_passage_recall},
+        "minimal_answer": {"f1": avg_minimal_f1, "precision": avg_minimal_recall, "recall": avg_minimal_precision},
     }
-    print(json.dumps(aggregate_metrics))
+
+    return results_dict

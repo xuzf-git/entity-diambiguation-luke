@@ -25,7 +25,7 @@ local token_indexers = {
        "type": "tydi",
        "transformers_model_name": transformers_model_name,
        "is_evaluation": true,
-       "include_unknowns_probability": 1.0
+       "include_unknowns_probability": 0.0
        },
     "train_data_path": train_data_path,
     "validation_data_path": validation_data_path,

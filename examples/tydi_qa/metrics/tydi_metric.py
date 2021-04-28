@@ -5,6 +5,7 @@ import json
 import torch
 
 from allennlp.training.metrics import Metric
+from examples.tydi_qa.metrics.tydi_eval import evaluate_prediction_file
 
 
 class TyDiPrediction(NamedTuple):
@@ -14,12 +15,30 @@ class TyDiPrediction(NamedTuple):
 
 
 class TyDiMetric(Metric):
-    def __init__(self, prediction_dump_path: str):
+    def __init__(
+        self,
+        gold_data_path: str,
+        prediction_dump_path: str,
+        validation_language: str = "average",
+        validation_task: str = "minimal_answer",
+        validation_metric: str = "f1",
+    ):
         super().__init__()
         self.document_predictions = defaultdict(list)
         self.passage_answer_candidates = {}
         self.example_to_language = {}
+        self.gold_data_path = gold_data_path
         self.prediction_dump_path = prediction_dump_path
+
+        self.validation_language = validation_language
+        self.validation_task = validation_task
+        self.validation_metric = validation_metric
+
+        self.count = 0
+
+    @property
+    def validation_metric_name(self) -> str:
+        return f"{self.validation_language}_{self.validation_task}_{self.validation_metric}"
 
     def __call__(self, output_dict: Dict[str, torch.Tensor], metadata_list: List[Dict]):
 
@@ -67,11 +86,12 @@ class TyDiMetric(Metric):
                 return passage_idx
         return -1
 
-    def get_metric(self, reset: bool):
+    def get_metric(self, reset: bool) -> float:
         if not reset:
-            return {}
+            return 0
 
-        with open(self.prediction_dump_path, "w") as f:
+        prediction_dump_path = self.prediction_dump_path + f"_{self.count}"
+        with open(prediction_dump_path, "w") as f:
             for example_id, predictions in self.document_predictions.items():
                 prediction = max(predictions, key=lambda x: x.score)
 
@@ -93,4 +113,7 @@ class TyDiMetric(Metric):
                 }
                 f.write(json.dumps(json_prediction) + "\n")
 
-        return {}
+                self.count += 1
+
+        result_dict = evaluate_prediction_file(self.gold_data_path, prediction_dump_path)
+        return result_dict[self.validation_language][self.validation_task][self.validation_metric]

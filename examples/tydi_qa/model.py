@@ -27,7 +27,7 @@ class TransformersQAModel(Model):
         dropout: float = 0.1,
         answer_type_name_space: str = "answer_type",
         max_sequence_length: int = 512,
-        prediction_dump_path: str = None,
+        tydi_metric: TyDiMetric = None,
     ):
 
         super().__init__(vocab=vocab)
@@ -50,10 +50,8 @@ class TransformersQAModel(Model):
             "answer_type_accuracy": CategoricalAccuracy(),
             "span_accuracy": CategoricalAccuracy(),
         }
-        if prediction_dump_path:
-            self.tydi_metric = TyDiMetric(prediction_dump_path)
-        else:
-            self.tydi_metric = None
+
+        self.tydi_metric = tydi_metric
 
     def is_using_luke_with_entity(self) -> bool:
         # check if the token embedder is Luke
@@ -135,5 +133,5 @@ class TransformersQAModel(Model):
     def get_metrics(self, reset: bool = False):
         metric_results = {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
         if self.tydi_metric is not None:
-            metric_results.update(self.tydi_metric.get_metric(reset=reset))
+            metric_results[self.tydi_metric.validation_metric_name] = self.tydi_metric.get_metric(reset=reset)
         return metric_results
