@@ -81,6 +81,7 @@ class LAReQAReader(DatasetReader):
         max_answer_length: int = 512,
         wiki_mention_detector: WikiMentionDetector = None,
         use_segment_type_id: bool = False,
+        max_num_entity_features: int = 128,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -98,6 +99,7 @@ class LAReQAReader(DatasetReader):
             self.wiki_mention_detector.set_tokenizer(tokenizer.tokenizer)
 
         self.use_segment_type_id = use_segment_type_id
+        self.max_num_entity_features = max_num_entity_features
 
     def text_to_instance(
         self, question: str, answer: str, context_paragraph: List[str], idx: str, title: str, language: str = None
@@ -140,7 +142,7 @@ class LAReQAReader(DatasetReader):
 
     def get_entity_features(self, tokens: List[Token], title: str, language: str):
         assert language is not None
-        mentions = self.wiki_mention_detector.detect_mentions(tokens, title, language)
+        mentions = self.wiki_mention_detector.detect_mentions(tokens, title, language)[: self.max_num_entity_features]
         entity_features = self.wiki_mention_detector.mentions_to_entity_features(tokens, mentions)
 
         entity_feature_fields = {}
