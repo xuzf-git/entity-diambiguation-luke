@@ -1,6 +1,7 @@
 from typing import NamedTuple, Dict, List
 from collections import defaultdict
 import json
+from pathlib import Path
 
 import torch
 
@@ -27,6 +28,7 @@ class TyDiMetric(Metric):
         self.document_predictions = defaultdict(list)
         self.passage_answer_candidates = {}
         self.example_to_language = {}
+        assert Path(gold_data_path).exists()
         self.gold_data_path = gold_data_path
         self.prediction_dump_path = prediction_dump_path
 
