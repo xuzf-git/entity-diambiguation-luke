@@ -23,6 +23,7 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         num_special_mask_embeddings: int = None,
         output_entity_embeddings: bool = False,
         num_additional_special_tokens: int = None,
+        discard_entity_embeddings: bool = False
     ) -> None:
         """
 
@@ -55,6 +56,8 @@ class PretrainedLukeEmbedder(TokenEmbedder):
 
         num_additional_special_tokens: `int`
             Used when adding special tokens to the pre-trained vocabulary.
+        discard_entity_embeddings: `bool`
+            Replace entity embeddings with a dummy vector to save memory.
         """
         super().__init__()
 
@@ -77,6 +80,9 @@ class PretrainedLukeEmbedder(TokenEmbedder):
             model_weights["entity_embeddings.entity_embeddings.weight"] = torch.cat(
                 [pad_emb] + [mask_emb for _ in range(num_special_mask_embeddings)]
             )
+
+        if discard_entity_embeddings:
+            model_weights["entity_embeddings.entity_embeddings.weight"] = None
 
         config = LukeConfig(
             entity_vocab_size=self.metadata["entity_vocab_size"],
