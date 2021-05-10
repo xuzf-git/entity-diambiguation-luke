@@ -23,7 +23,7 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         num_special_mask_embeddings: int = None,
         output_entity_embeddings: bool = False,
         num_additional_special_tokens: int = None,
-        discard_entity_embeddings: bool = False
+        discard_entity_embeddings: bool = False,
     ) -> None:
         """
 
@@ -82,7 +82,10 @@ class PretrainedLukeEmbedder(TokenEmbedder):
             )
 
         if discard_entity_embeddings:
-            model_weights["entity_embeddings.entity_embeddings.weight"] = None
+            self.metadata["entity_vocab_size"] = 1
+            model_weights["entity_embeddings.entity_embeddings.weight"] = torch.zeros(
+                1, self.metadata["entity_emb_size"]
+            )
 
         config = LukeConfig(
             entity_vocab_size=self.metadata["entity_vocab_size"],
