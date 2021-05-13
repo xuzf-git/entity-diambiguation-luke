@@ -115,9 +115,9 @@ class TransformersRelationClassifier(Model):
             word_ids[self.text_field_key]["entity_attention_mask"] = torch.ones_like(entity_ids)
 
         if self.is_using_luke_with_entity():
-            token_embeddings, entity_embeddings = self.embedder(**word_ids)
+            token_embeddings, entity_embeddings = self.embedder(**word_ids[self.text_field_key])
         else:
-            token_embeddings = self.embedder(**word_ids)
+            token_embeddings = self.embedder(**word_ids[self.text_field_key])
             entity_embeddings = None
 
         if self.encoder is not None:
