@@ -33,11 +33,12 @@ class TransformersRelationClassifier(Model):
     ):
 
         super().__init__(vocab=vocab)
+        self.embedder = embedder
+        self.encoder = encoder
+
         self.combine_word_and_entity_features = combine_word_and_entity_features
         if combine_word_and_entity_features and not self.is_using_luke_with_entity():
             raise ValueError(f"You need use PretrainedLukeEmbedder and set output_entity_embeddings True.")
-        self.embedder = embedder
-        self.encoder = encoder
 
         assert feature_type in {"cls_token", "mention_pooling", "entity_start", "entity_embeddings"}
         self.feature_type = feature_type
