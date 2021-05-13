@@ -16,7 +16,6 @@ base + {
                     "num_special_mask_embeddings": 2,
                     "output_entity_embeddings": true,
                     "num_additional_special_tokens": 4
-        },
-        "feature_type": "entity_embeddings"
+        }
     }
 }

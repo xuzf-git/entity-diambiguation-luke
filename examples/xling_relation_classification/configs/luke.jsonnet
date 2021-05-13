@@ -16,7 +16,6 @@ base + {
                     "num_additional_special_tokens": 4,
                     "discard_entity_embeddings": true
 
-        },
-        "feature_type": "entity_start"
+        }
     }
 }

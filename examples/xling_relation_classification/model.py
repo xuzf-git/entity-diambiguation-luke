@@ -133,6 +133,8 @@ class TransformersRelationClassifier(Model):
             entity_1_features = self._extract_entity_start(token_embeddings, entity1_span)
             entity_2_features = self._extract_entity_start(token_embeddings, entity2_span)
             word_feature_vector = torch.cat([entity_1_features, entity_2_features], dim=1)
+        else:
+            raise ValueError(f"Invalid feature_type: {self.feature_type}")
 
         if self.is_using_luke_with_entity():
             # token_embeddings is supposed to be a sequence of two entity embeddings
