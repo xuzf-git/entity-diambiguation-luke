@@ -25,12 +25,12 @@ class ExhaustiveNERModel(Model):
         combine_word_and_entity_features: bool = False,
     ):
         super().__init__(vocab=vocab)
+        self.embedder = embedder
+        self.encoder = encoder
+
         self.combine_word_and_entity_features = combine_word_and_entity_features
         if combine_word_and_entity_features and not self.is_using_luke_with_entity():
             raise ValueError(f"You need use PretrainedLukeEmbedder and set output_entity_embeddings True.")
-
-        self.embedder = embedder
-        self.encoder = encoder
 
         token_embed_size = self.encoder.get_output_dim() if self.encoder else self.embedder.get_output_dim()
         if self.is_using_luke_with_entity():
