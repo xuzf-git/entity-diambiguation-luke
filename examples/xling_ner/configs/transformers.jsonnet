@@ -6,13 +6,8 @@ base + {
     "model": {
         "type": "exhausitce_ner",
         "embedder": {
-            "type": "basic",
-            "token_embedders": {
-                "tokens": {
                     "type": "pretrained_transformer",
                         "model_name": transformers_model_name
                     }
                 }
-            },
-    }
 }

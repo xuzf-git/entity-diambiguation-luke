@@ -10,9 +10,6 @@ base + {
         "type": "exhausitce_ner",
         "combine_word_and_entity_features": true,
         "embedder": {
-            "type": "basic",
-            "token_embedders": {
-                "tokens": {
                     "type": "luke",
                     "pretrained_weight_path": pretrained_weight_path,
                     "pretrained_metadata_path": pretrained_metadata_path,
@@ -21,6 +18,4 @@ base + {
                     "output_entity_embeddings": true
                 }
             }
-        }
-    }
 }

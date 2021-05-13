@@ -5,6 +5,7 @@ import torch.nn as nn
 from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.models import Model
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
+from allennlp.modules.token_embedders import TokenEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy
 
@@ -18,10 +19,11 @@ class ExhaustiveNERModel(Model):
     def __init__(
         self,
         vocab: Vocabulary,
-        embedder: TextFieldEmbedder,
+        embedder: TokenEmbedder,
         encoder: Seq2SeqEncoder = None,
         dropout: float = 0.1,
         label_name_space: str = "labels",
+        text_field_key: str = "tokens",
         combine_word_and_entity_features: bool = False,
     ):
         super().__init__(vocab=vocab)
@@ -41,6 +43,7 @@ class ExhaustiveNERModel(Model):
         else:
             feature_size = token_embed_size * 2
 
+        self.text_field_key = text_field_key
         self.classifier = nn.Linear(feature_size, vocab.get_vocab_size(label_name_space))
 
         self.dropout = nn.Dropout(p=dropout)
@@ -51,8 +54,7 @@ class ExhaustiveNERModel(Model):
 
     def is_using_luke_with_entity(self) -> bool:
         # check if the token embedder is Luke
-        token_embedder = self.embedder._token_embedders["tokens"]
-        return isinstance(token_embedder, PretrainedLukeEmbedder) and token_embedder.output_entity_embeddings
+        return isinstance(self.embedder, PretrainedLukeEmbedder) and self.embedder.output_entity_embeddings
 
     def forward(
         self,
@@ -69,15 +71,15 @@ class ExhaustiveNERModel(Model):
 
         if entity_ids is not None:
             assert self.is_using_luke_with_entity()
-            word_ids["tokens"]["entity_ids"] = entity_ids
-            word_ids["tokens"]["entity_position_ids"] = entity_position_ids
-            word_ids["tokens"]["entity_attention_mask"] = entity_ids == 1
+            word_ids[self.text_field_key]["entity_ids"] = entity_ids
+            word_ids[self.text_field_key]["entity_position_ids"] = entity_position_ids
+            word_ids[self.text_field_key]["entity_attention_mask"] = entity_ids == 1
 
         if self.is_using_luke_with_entity():
             assert entity_ids is not None
-            token_embeddings, entity_embeddings = self.embedder(word_ids)
+            token_embeddings, entity_embeddings = self.embedder(**word_ids[self.text_field_key])
         else:
-            token_embeddings = self.embedder(word_ids)
+            token_embeddings = self.embedder(**word_ids[self.text_field_key])
             entity_embeddings = None
 
         if self.encoder is not None:

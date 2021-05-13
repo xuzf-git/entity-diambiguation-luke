@@ -9,16 +9,11 @@ base + {
     "model": {
         "type": "exhausitce_ner",
         "embedder": {
-            "type": "basic",
-            "token_embedders": {
-                "tokens": {
                     "type": "luke",
                     "pretrained_weight_path": pretrained_weight_path,
                     "pretrained_metadata_path": pretrained_metadata_path,
                     "entity_vocab_path": entity_vocab_path,
                     "discard_entity_embeddings": true
-                }
-            }
         }
     }
 }
