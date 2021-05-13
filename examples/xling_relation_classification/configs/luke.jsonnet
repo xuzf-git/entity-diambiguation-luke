@@ -8,18 +8,14 @@ base + {
     "dataset_reader": base["dataset_reader"],
     "model": {
         "type": "transformers_relation_classifier",
-        "embedder": {
-            "type": "basic",
-            "token_embedders": {
-                "tokens": {
+        "embedder":  {
                     "type": "luke",
                     "pretrained_weight_path": pretrained_weight_path,
                     "pretrained_metadata_path": pretrained_metadata_path,
                     "entity_vocab_path": entity_vocab_path,
                     "num_additional_special_tokens": 4,
                     "discard_entity_embeddings": true
-                }
-            }
+
         },
         "feature_type": "entity_start"
     }

@@ -7,14 +7,9 @@ base + {
     "model": {
         "type": "transformers_relation_classifier",
         "embedder": {
-            "type": "basic",
-            "token_embedders": {
-                "tokens": {
                     "type": "pretrained_transformer",
                     "model_name": transformers_model_name,
                     "tokenizer_kwargs": {"additional_special_tokens": extra_tokens}
-                    }
-                }
             },
         "feature_type": "entity_start"
     }

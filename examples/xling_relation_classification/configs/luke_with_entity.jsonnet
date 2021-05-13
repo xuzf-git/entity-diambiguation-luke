@@ -9,9 +9,6 @@ base + {
     "model": {
         "type": "transformers_relation_classifier",
         "embedder": {
-            "type": "basic",
-            "token_embedders": {
-                "tokens": {
                     "type": "luke",
                     "pretrained_weight_path": pretrained_weight_path,
                     "pretrained_metadata_path": pretrained_metadata_path,
@@ -19,8 +16,6 @@ base + {
                     "num_special_mask_embeddings": 2,
                     "output_entity_embeddings": true,
                     "num_additional_special_tokens": 4
-                }
-            }
         },
         "feature_type": "entity_embeddings"
     }

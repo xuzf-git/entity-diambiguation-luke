@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.models import Model
-from allennlp.modules.text_field_embedders import TextFieldEmbedder
+from allennlp.modules.token_embedders import TokenEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy
 from examples.utils.embedders.luke_embedder import PretrainedLukeEmbedder
@@ -23,10 +23,11 @@ class TransformersRelationClassifier(Model):
     def __init__(
         self,
         vocab: Vocabulary,
-        embedder: TextFieldEmbedder,
+        embedder: TokenEmbedder,
         encoder: Seq2SeqEncoder = None,
         dropout: float = 0.1,
         label_name_space: str = "labels",
+        text_field_key: str = "tokens",
         feature_type: str = "entity_start",
         ignored_labels: List[str] = None,
         combine_word_and_entity_features: bool = False,
@@ -59,6 +60,7 @@ class TransformersRelationClassifier(Model):
 
         self.classifier = nn.Linear(feature_size, vocab.get_vocab_size(label_name_space))
 
+        self.text_field_key = text_field_key
         self.label_name_space = label_name_space
 
         self.dropout = nn.Dropout(p=dropout)
@@ -71,8 +73,8 @@ class TransformersRelationClassifier(Model):
 
     def is_using_luke_with_entity(self) -> bool:
         # check if the token embedder is Luke
-        token_embedder = self.embedder._token_embedders["tokens"]
-        return isinstance(token_embedder, PretrainedLukeEmbedder) and token_embedder.output_entity_embeddings
+        return isinstance(self.embedder, PretrainedLukeEmbedder) and self.embedder.output_entity_embeddings
+
 
     @staticmethod
     def get_span_max_length(span: torch.LongTensor) -> int:
@@ -99,7 +101,7 @@ class TransformersRelationClassifier(Model):
     ):
         if entity_ids is not None:
             assert self.is_using_luke_with_entity()
-            word_ids["tokens"]["entity_ids"] = entity_ids
+            word_ids[self.text_field_key]["entity_ids"] = entity_ids
 
             max_position_length = max(self.get_span_max_length(entity1_span), self.get_span_max_length(entity2_span))
             entity_position_ids = torch.stack(
@@ -109,13 +111,13 @@ class TransformersRelationClassifier(Model):
                 ],
                 dim=1,
             )
-            word_ids["tokens"]["entity_position_ids"] = entity_position_ids
-            word_ids["tokens"]["entity_attention_mask"] = torch.ones_like(entity_ids)
+            word_ids[self.text_field_key]["entity_position_ids"] = entity_position_ids
+            word_ids[self.text_field_key]["entity_attention_mask"] = torch.ones_like(entity_ids)
 
         if self.is_using_luke_with_entity():
-            token_embeddings, entity_embeddings = self.embedder(word_ids)
+            token_embeddings, entity_embeddings = self.embedder(**word_ids)
         else:
-            token_embeddings = self.embedder(word_ids)
+            token_embeddings = self.embedder(**word_ids)
             entity_embeddings = None
 
         if self.encoder is not None:
