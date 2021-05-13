@@ -137,7 +137,7 @@ class TransformersRelationClassifier(Model):
         if self.is_using_luke_with_entity():
             # token_embeddings is supposed to be a sequence of two entity embeddings
             batch_size, _, embedding_size = entity_embeddings.size()
-            entity_feature_vector = token_embeddings.view(batch_size, embedding_size * 2)
+            entity_feature_vector = entity_embeddings.view(batch_size, embedding_size * 2)
 
         if self.combine_word_and_entity_features:
             feature_vector = torch.cat([word_feature_vector, entity_feature_vector], dim=1)
