@@ -29,9 +29,13 @@ class TransformersRelationClassifier(Model):
         label_name_space: str = "labels",
         feature_type: str = "entity_start",
         ignored_labels: List[str] = None,
+        combine_word_and_entity_features: bool = False,
     ):
 
         super().__init__(vocab=vocab)
+        self.combine_word_and_entity_features = combine_word_and_entity_features
+        if combine_word_and_entity_features and not self.is_using_luke_with_entity():
+            raise ValueError(f"You need use PretrainedLukeEmbedder and set output_entity_embeddings True.")
         self.embedder = embedder
         self.encoder = encoder
 
@@ -40,9 +44,17 @@ class TransformersRelationClassifier(Model):
         token_embed_size = self.encoder.get_output_dim() if self.encoder else self.embedder.get_output_dim()
 
         if feature_type == "cls_token":
-            feature_size = token_embed_size
+            word_feature_size = token_embed_size
         else:
-            feature_size = token_embed_size * 2
+            word_feature_size = token_embed_size * 2
+
+        if self.is_using_luke_with_entity():
+            if self.combine_word_and_entity_features:
+                feature_size = word_feature_size + token_embed_size * 2
+            else:
+                feature_size = token_embed_size * 2
+        else:
+            feature_size = word_feature_size
 
         self.classifier = nn.Linear(feature_size, vocab.get_vocab_size(label_name_space))
 
@@ -82,9 +94,10 @@ class TransformersRelationClassifier(Model):
         entity2_span: torch.LongTensor,
         labels: torch.LongTensor = None,
         entity_ids: torch.LongTensor = None,
-        **kwargs
+        **kwargs,
     ):
         if entity_ids is not None:
+            assert self.is_using_luke_with_entity()
             word_ids["tokens"]["entity_ids"] = entity_ids
 
             max_position_length = max(self.get_span_max_length(entity1_span), self.get_span_max_length(entity2_span))
@@ -98,25 +111,37 @@ class TransformersRelationClassifier(Model):
             word_ids["tokens"]["entity_position_ids"] = entity_position_ids
             word_ids["tokens"]["entity_attention_mask"] = torch.ones_like(entity_ids)
 
-        token_embeddings = self.embedder(word_ids)
+        if self.is_using_luke_with_entity():
+            token_embeddings, entity_embeddings = self.embedder(word_ids)
+        else:
+            token_embeddings = self.embedder(word_ids)
+            entity_embeddings = None
+
         if self.encoder is not None:
             token_embeddings = self.encoder(token_embeddings)
 
         if self.feature_type == "cls_token":
-            feature_vector = token_embeddings[:, 0]
+            word_feature_vector = token_embeddings[:, 0]
         elif self.feature_type == "mention_pooling":
             entity_1_features = self._span_pooling(token_embeddings, entity1_span)
             entity_2_features = self._span_pooling(token_embeddings, entity2_span)
-            feature_vector = torch.cat([entity_1_features, entity_2_features], dim=1)
+            word_feature_vector = torch.cat([entity_1_features, entity_2_features], dim=1)
         elif self.feature_type == "entity_start":
             entity_1_features = self._extract_entity_start(token_embeddings, entity1_span)
             entity_2_features = self._extract_entity_start(token_embeddings, entity2_span)
-            feature_vector = torch.cat([entity_1_features, entity_2_features], dim=1)
-        elif self.feature_type == "entity_embeddings":
-            assert self.is_using_luke_with_entity()
+            word_feature_vector = torch.cat([entity_1_features, entity_2_features], dim=1)
+
+        if self.is_using_luke_with_entity():
             # token_embeddings is supposed to be a sequence of two entity embeddings
-            batch_size, _, embedding_size = token_embeddings.size()
-            feature_vector = token_embeddings.view(batch_size, embedding_size * 2)
+            batch_size, _, embedding_size = entity_embeddings.size()
+            entity_feature_vector = token_embeddings.view(batch_size, embedding_size * 2)
+
+        if self.combine_word_and_entity_features:
+            feature_vector = torch.cat([word_feature_vector, entity_feature_vector], dim=1)
+        elif self.is_using_luke_with_entity():
+            feature_vector = entity_feature_vector
+        else:
+            feature_vector = word_feature_vector
 
         feature_vector = self.dropout(feature_vector)
         logits = self.classifier(feature_vector)

@@ -141,33 +141,6 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         )
 
         if self.output_entity_embeddings:
-            return luke_outputs[1]
+            return luke_outputs[0], luke_outputs[1]
         else:
             return luke_outputs[0]
-
-
-@TokenEmbedder.register("luke_with_entity")
-class PretrainedLukeEmbedderWithEntity(PretrainedLukeEmbedder):
-    @overrides
-    def forward(
-        self,
-        token_ids: torch.LongTensor,
-        mask: torch.BoolTensor,
-        entity_ids: torch.LongTensor,
-        entity_position_ids: torch.LongTensor,
-        type_ids: Optional[torch.LongTensor] = None,
-        entity_segment_ids: torch.LongTensor = None,
-        entity_attention_mask: torch.LongTensor = None,
-    ) -> torch.Tensor:  # type: ignore
-
-        luke_outputs = self.luke_model(
-            token_ids,
-            word_segment_ids=type_ids,
-            word_attention_mask=mask,
-            entity_ids=entity_ids,
-            entity_position_ids=entity_position_ids,
-            entity_segment_ids=entity_segment_ids,
-            entity_attention_mask=entity_attention_mask,
-        )
-
-        return luke_outputs[0], luke_outputs[1]

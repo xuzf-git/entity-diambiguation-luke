@@ -22,13 +22,25 @@ class ExhaustiveNERModel(Model):
         encoder: Seq2SeqEncoder = None,
         dropout: float = 0.1,
         label_name_space: str = "labels",
+        combine_word_and_entity_features: bool = False,
     ):
         super().__init__(vocab=vocab)
+        self.combine_word_and_entity_features = combine_word_and_entity_features
+        if combine_word_and_entity_features and not self.is_using_luke_with_entity():
+            raise ValueError(f"You need use PretrainedLukeEmbedder and set output_entity_embeddings True.")
+
         self.embedder = embedder
         self.encoder = encoder
 
         token_embed_size = self.encoder.get_output_dim() if self.encoder else self.embedder.get_output_dim()
-        feature_size = token_embed_size if self.is_using_luke_with_entity() else token_embed_size * 2
+        if self.is_using_luke_with_entity():
+            if self.combine_word_and_entity_features:
+                feature_size = token_embed_size * 3
+            else:
+                feature_size = token_embed_size
+        else:
+            feature_size = token_embed_size * 2
+
         self.classifier = nn.Linear(feature_size, vocab.get_vocab_size(label_name_space))
 
         self.dropout = nn.Dropout(p=dropout)
@@ -52,7 +64,7 @@ class ExhaustiveNERModel(Model):
         labels: torch.LongTensor = None,
         entity_ids: torch.LongTensor = None,
         entity_position_ids: torch.LongTensor = None,
-        **kwargs
+        **kwargs,
     ):
 
         if entity_ids is not None:
@@ -61,21 +73,31 @@ class ExhaustiveNERModel(Model):
             word_ids["tokens"]["entity_position_ids"] = entity_position_ids
             word_ids["tokens"]["entity_attention_mask"] = entity_ids == 1
 
-        token_embeddings = self.embedder(word_ids)
+        if self.is_using_luke_with_entity():
+            assert entity_ids is not None
+            token_embeddings, entity_embeddings = self.embedder(word_ids)
+        else:
+            token_embeddings = self.embedder(word_ids)
+            entity_embeddings = None
+
         if self.encoder is not None:
             token_embeddings = self.encoder(token_embeddings)
         embedding_size = token_embeddings.size(-1)
 
-        if entity_ids is None:
-            entity_start_positions = entity_start_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
-            start_embeddings = torch.gather(token_embeddings, -2, entity_start_positions)
+        entity_start_positions = entity_start_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
+        start_embeddings = torch.gather(token_embeddings, -2, entity_start_positions)
 
-            entity_end_positions = entity_end_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
-            end_embeddings = torch.gather(token_embeddings, -2, entity_end_positions)
+        entity_end_positions = entity_end_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
+        end_embeddings = torch.gather(token_embeddings, -2, entity_end_positions)
 
-            feature_vector = torch.cat([start_embeddings, end_embeddings], dim=2)
+        word_feature_vector = torch.cat([start_embeddings, end_embeddings], dim=2)
+
+        if self.combine_word_and_entity_features:
+            feature_vector = torch.cat([word_feature_vector, entity_embeddings], dim=2)
+        elif self.is_using_luke_with_entity():
+            feature_vector = entity_embeddings
         else:
-            feature_vector = token_embeddings
+            feature_vector = word_feature_vector
 
         feature_vector = self.dropout(feature_vector)
         logits = self.classifier(feature_vector)
