@@ -2,7 +2,7 @@ from typing import Dict
 import numpy as np
 from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
-from allennlp.data.fields import SpanField, TextField, LabelField, ArrayField
+from allennlp.data.fields import SpanField, TextField, LabelField, ArrayField, MetadataField
 
 
 def parse_relx_file(path: str):
@@ -32,7 +32,7 @@ class KBP37Reader(DatasetReader):
         self.token_indexers = token_indexers
         self.use_entity_feature = use_entity_feature
 
-    def text_to_instance(self, sentence: str, label: str):
+    def text_to_instance(self, sentence: str, label: str = None):
         tokens = self.tokenizer.tokenize(sentence)
         if isinstance(self.tokenizer, PretrainedTransformerTokenizer):
             tokens = self.tokenizer.add_special_tokens(tokens)
@@ -49,8 +49,11 @@ class KBP37Reader(DatasetReader):
             "word_ids": text_field,
             "entity1_span": SpanField(e1_start_position, e1_end_position, text_field),
             "entity2_span": SpanField(e2_start_position, e2_end_position, text_field),
-            "labels": LabelField(label),
+            "metadata": MetadataField({"sentence": sentence}),
         }
+
+        if label is not None:
+            fields["label"].append(LabelField(label))
 
         if self.use_entity_feature:
             fields["entity_ids"] = ArrayField(np.array([1, 2]))

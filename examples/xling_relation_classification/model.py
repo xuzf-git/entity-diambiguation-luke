@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 import torch
 import torch.nn as nn
 
@@ -75,7 +75,6 @@ class TransformersRelationClassifier(Model):
         # check if the token embedder is Luke
         return isinstance(self.embedder, PretrainedLukeEmbedder) and self.embedder.output_entity_embeddings
 
-
     @staticmethod
     def get_span_max_length(span: torch.LongTensor) -> int:
         return (span[:, 1] - span[:, 0] + 1).max().item()
@@ -95,8 +94,9 @@ class TransformersRelationClassifier(Model):
         word_ids: TextFieldTensors,
         entity1_span: torch.LongTensor,
         entity2_span: torch.LongTensor,
-        labels: torch.LongTensor = None,
+        label: torch.LongTensor = None,
         entity_ids: torch.LongTensor = None,
+        metadata: List[Dict[str]] = None,
         **kwargs,
     ):
         if entity_ids is not None:
@@ -152,17 +152,21 @@ class TransformersRelationClassifier(Model):
         logits = self.classifier(feature_vector)
         prediction_logits, prediction = logits.max(dim=-1)
 
-        output_dict = {"logits": logits, "prediction": prediction}
+        output_dict = {
+            "input": [item["sentence"] for item in metadata],
+            "prediction": prediction,
+        }
 
-        if labels is not None:
-            output_dict["loss"] = self.criterion(logits, labels)
-            self.metrics["accuracy"](logits, labels)
+        if label is not None:
+            output_dict["loss"] = self.criterion(logits, label)
+            output_dict["gold_label"] = label
+            self.metrics["accuracy"](logits, label)
 
             prediction_labels = [
                 self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in prediction.tolist()
             ]
-            gold_labels = [self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in labels.tolist()]
-            self.metrics["f1"](prediction, labels, prediction_labels, gold_labels)
+            gold_labels = [self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in label.tolist()]
+            self.metrics["f1"](prediction, label, prediction_labels, gold_labels)
 
         return output_dict
 
@@ -192,6 +196,16 @@ class TransformersRelationClassifier(Model):
         range_tensor = torch.arange(batch_size, device=token_embeddings.device)
         start_embeddings = token_embeddings[range_tensor, entity_start_position]
         return start_embeddings
+
+    def make_output_human_readable(self, output_dict: Dict[str, torch.Tensor]):
+        output_dict["prediction"] = self.make_label_human_readable(output_dict["prediction"])
+
+        if "gold_label" in output_dict:
+            output_dict["gold_label"] = self.make_label_human_readable(output_dict["gold_label"])
+        return output_dict
+
+    def make_label_human_readable(self, label: torch.Tensor):
+        return [self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in label]
 
     def get_metrics(self, reset: bool = False):
         return {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
