@@ -1,7 +1,6 @@
 import glob
 import json
 import logging
-import multiprocessing
 import os
 from argparse import Namespace
 
@@ -12,10 +11,8 @@ from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 from transformers import WEIGHTS_NAME, BertTokenizer
-from wikipedia2vec.dump_db import DumpDB
 
 from ..utils import set_seed
-from ..utils.mention_db import MentionDB
 from ..utils.trainer import Trainer, trainer_args
 from .model import LukeForReadingComprehension
 from .utils.dataset import SquadV1Processor, SquadV2Processor
@@ -23,7 +20,7 @@ from .utils.feature import convert_examples_to_features
 from .utils.result_writer import Result, write_predictions
 from .utils.squad_eval import EVAL_OPTS as SQUAD_EVAL_OPTS
 from .utils.squad_eval import main as evaluate_on_squad
-from .utils.wiki_link_db import WikiLinkDB
+from examples.utils.wiki_mention_detector.wiki_link_db import WikiLinkDB
 
 logger = logging.getLogger(__name__)
 
@@ -31,28 +28,6 @@ logger = logging.getLogger(__name__)
 @click.group(name="reading-comprehension")
 def cli():
     pass
-
-
-@cli.command()
-@click.argument("dump_db_file", type=click.Path(exists=True))
-@click.argument("mention_db_file", type=click.Path(exists=True))
-@click.argument("out_file", type=click.Path())
-@click.option("--pool-size", default=multiprocessing.cpu_count())
-@click.option("--chunk-size", default=100)
-@click.pass_obj
-def build_wiki_link_db(common_args, dump_db_file, mention_db_file, **kwargs):
-    dump_db = DumpDB(dump_db_file)
-    mention_db = MentionDB(mention_db_file)
-    WikiLinkDB.build(dump_db, mention_db, **kwargs)
-
-
-@cli.command()
-@click.argument("dump_db_file", type=click.Path(exists=True))
-@click.argument("out_file", type=click.Path())
-@click.option("--compress", default=3)
-def generate_redirect_file(dump_db_file, out_file, compress):
-    data = {k: v for k, v in DumpDB(dump_db_file).redirects()}
-    joblib.dump(data, out_file, compress=compress)
 
 
 @cli.command()

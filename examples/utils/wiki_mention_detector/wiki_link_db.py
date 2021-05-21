@@ -1,4 +1,6 @@
+import click
 import logging
+import multiprocessing
 from contextlib import closing
 from multiprocessing.pool import Pool
 
@@ -6,7 +8,38 @@ import joblib
 import marisa_trie
 from tqdm import tqdm
 
+from wikipedia2vec.dump_db import DumpDB
+from .mention_db import MentionDB
+
+
 logger = logging.getLogger(__name__)
+
+
+@click.group(name="wiki-link-db")
+def cli():
+    pass
+
+
+@cli.command()
+@click.argument("dump_db_file", type=click.Path(exists=True))
+@click.argument("mention_db_file", type=click.Path(exists=True))
+@click.argument("out_file", type=click.Path())
+@click.option("--pool-size", default=multiprocessing.cpu_count())
+@click.option("--chunk-size", default=100)
+@click.pass_obj
+def build_wiki_link_db(common_args, dump_db_file, mention_db_file, **kwargs):
+    dump_db = DumpDB(dump_db_file)
+    mention_db = MentionDB(mention_db_file)
+    WikiLinkDB.build(dump_db, mention_db, **kwargs)
+
+
+@cli.command()
+@click.argument("dump_db_file", type=click.Path(exists=True))
+@click.argument("out_file", type=click.Path())
+@click.option("--compress", default=3)
+def generate_redirect_file(dump_db_file, out_file, compress):
+    data = {k: v for k, v in DumpDB(dump_db_file).redirects()}
+    joblib.dump(data, out_file, compress=compress)
 
 
 class WikiLink(object):

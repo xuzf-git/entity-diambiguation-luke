@@ -1,13 +1,19 @@
 from typing import Set, Dict, List, NamedTuple
-from examples.reading_comprehension.utils.wiki_link_db import WikiLinkDB
+import click
 import joblib
-from transformers.tokenization_utils import PreTrainedTokenizer
-from luke.utils.entity_vocab import EntityVocab, Entity
-from luke.utils.interwiki_db import InterwikiDB
-from examples.utils.entity_db import EntityDB
+import multiprocessing
 
+
+from transformers.tokenization_utils import PreTrainedTokenizer
 from allennlp.data import Token
 from allennlp.common import FromParams
+
+from luke.utils.entity_vocab import EntityVocab, Entity
+from wikipedia2vec.dump_db import DumpDB
+from luke.utils.interwiki_db import InterwikiDB
+from .entity_db import EntityDB
+from .wiki_link_db import WikiLinkDB
+from .mention_db import MentionDB
 
 
 class Mention(NamedTuple):
