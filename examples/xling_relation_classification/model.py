@@ -205,7 +205,7 @@ class TransformersRelationClassifier(Model):
         return output_dict
 
     def make_label_human_readable(self, label: torch.Tensor):
-        return [self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in label]
+        return [self.vocab.get_token_from_index(i.item(), namespace=self.label_name_space) for i in label]
 
     def get_metrics(self, reset: bool = False):
         return {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
