@@ -96,7 +96,7 @@ class TransformersRelationClassifier(Model):
         entity2_span: torch.LongTensor,
         label: torch.LongTensor = None,
         entity_ids: torch.LongTensor = None,
-        metadata: List[Dict[str]] = None,
+        metadata: List[Dict] = None,
         **kwargs,
     ):
         if entity_ids is not None:
