@@ -53,7 +53,7 @@ class KBP37Reader(DatasetReader):
         }
 
         if label is not None:
-            fields["label"].append(LabelField(label))
+            fields["label"] = LabelField(label)
 
         if self.use_entity_feature:
             fields["entity_ids"] = ArrayField(np.array([1, 2]))
