@@ -29,14 +29,17 @@ def parse_tacred_file(path: str):
         raise ValueError(f"{path} does not seem to be a json file. We currently only supports the json format file.")
     for example in json.load(open(path, "r")):
         tokens = example["token"]
-        insert_index = {
-            example["subj_start"]: E1_START,
-            example["subj_end"] + 1: E1_END,
-            example["obj_start"]: E2_START,
-            example["obj_end"] + 1: E2_END,
-        }
-        for i, token in sorted(insert_index.items(), key=lambda x: -x[0]):
-            tokens.insert(i, token)
+        spans = [
+            ((example["subj_start"], E1_START), (example["subj_end"] + 1, E1_END)),
+            ((example["obj_start"], E2_START), (example["obj_end"] + 1, E2_END)),
+        ]
+
+        # carefully insert special tokens in a specific order
+        spans.sort()
+        for i, span in enumerate(spans):
+            (start_idx, start_token), (end_idx, end_token) = span
+            tokens.insert(end_idx + i * 2, end_token)
+            tokens.insert(start_idx + i * 2, start_token)
 
         yield {"example_id": example["id"], "sentence": " ".join(tokens), "label": example["relation"]}
 
