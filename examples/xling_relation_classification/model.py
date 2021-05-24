@@ -68,8 +68,8 @@ class TransformersRelationClassifier(Model):
 
         self.metrics = {
             "accuracy": CategoricalAccuracy(),
-            "f1": MultiwayF1(ignored_labels=ignored_labels),
         }
+        self.f1_score = MultiwayF1(ignored_labels=ignored_labels)
 
     def is_using_luke_with_entity(self) -> bool:
         # check if the token embedder is Luke
@@ -96,7 +96,7 @@ class TransformersRelationClassifier(Model):
         entity2_span: torch.LongTensor,
         label: torch.LongTensor = None,
         entity_ids: torch.LongTensor = None,
-        metadata: List[Dict] = None,
+        input_sentence: List[str] = None,
         **kwargs,
     ):
         if entity_ids is not None:
@@ -153,7 +153,7 @@ class TransformersRelationClassifier(Model):
         prediction_logits, prediction = logits.max(dim=-1)
 
         output_dict = {
-            "input": [item["sentence"] for item in metadata],
+            "input": input_sentence,
             "prediction": prediction,
         }
 
@@ -166,7 +166,7 @@ class TransformersRelationClassifier(Model):
                 self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in prediction.tolist()
             ]
             gold_labels = [self.vocab.get_token_from_index(i, namespace=self.label_name_space) for i in label.tolist()]
-            self.metrics["f1"](prediction, label, prediction_labels, gold_labels)
+            self.f1_score(prediction, label, prediction_labels, gold_labels)
 
         return output_dict
 
@@ -208,4 +208,6 @@ class TransformersRelationClassifier(Model):
         return [self.vocab.get_token_from_index(i.item(), namespace=self.label_name_space) for i in label]
 
     def get_metrics(self, reset: bool = False):
-        return {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
+        output_dict = {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}
+        output_dict.update(self.f1_score.get_metric(reset))
+        return output_dict

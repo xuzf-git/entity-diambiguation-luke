@@ -1,11 +1,19 @@
 from typing import Dict
+import json
+from pathlib import Path
 import numpy as np
 from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import SpanField, TextField, LabelField, ArrayField, MetadataField
 
 
-def parse_relx_file(path: str):
+E1_START = "<e1>"
+E1_END = "</e1>"
+E2_START = "<e2>"
+E2_END = "</e2>"
+
+
+def parse_kbp37_or_relx_file(path: str):
     with open(path, "r") as f:
         for instance in f.read().strip().split("\n\n"):
             input_line, label = instance.strip().split("\n")
@@ -16,18 +24,42 @@ def parse_relx_file(path: str):
             yield {"example_id": example_id, "sentence": input_sentence, "label": label}
 
 
-E1_START = "<e1>"
-E1_END = "</e1>"
-E2_START = "<e2>"
-E2_END = "</e2>"
+def parse_tacred_file(path: str):
+    if Path(path).suffix != ".json":
+        raise ValueError(f"{path} does not seem to be a json file. We currently only supports the json format file.")
+    for example in json.load(open(path, "r")):
+        tokens = example["token"]
+        insert_index = {
+            example["subj_start"]: E1_START,
+            example["subj_end"] + 1: E1_END,
+            example["obj_start"]: E2_START,
+            example["obj_end"] + 1: E2_END,
+        }
+        for i, token in sorted(insert_index.items(), key=lambda x: -x[0]):
+            tokens.insert(i, token)
+
+        yield {"example_id": example["id"], "sentence": " ".join(tokens), "label": example["relation"]}
 
 
-@DatasetReader.register("kbp37")
-class KBP37Reader(DatasetReader):
+@DatasetReader.register("relation_classification")
+class RelationClassificationReader(DatasetReader):
     def __init__(
-        self, tokenizer: Tokenizer, token_indexers: Dict[str, TokenIndexer], use_entity_feature: bool = False, **kwargs
+        self,
+        dataset: str,
+        tokenizer: Tokenizer,
+        token_indexers: Dict[str, TokenIndexer],
+        use_entity_feature: bool = False,
+        **kwargs,
     ):
         super().__init__(**kwargs)
+
+        if dataset == "kbp37":
+            self.parser = parse_kbp37_or_relx_file
+        elif dataset == "tacred":
+            self.parser = parse_tacred_file
+        else:
+            raise ValueError(f"Valid values: [kbp37, tacred], but we got {dataset}")
+
         self.tokenizer = tokenizer
         self.token_indexers = token_indexers
         self.use_entity_feature = use_entity_feature
@@ -49,7 +81,7 @@ class KBP37Reader(DatasetReader):
             "word_ids": text_field,
             "entity1_span": SpanField(e1_start_position, e1_end_position, text_field),
             "entity2_span": SpanField(e2_start_position, e2_end_position, text_field),
-            "metadata": MetadataField({"sentence": sentence}),
+            "input_sentence": MetadataField(sentence),
         }
 
         if label is not None:
@@ -61,5 +93,5 @@ class KBP37Reader(DatasetReader):
         return Instance(fields)
 
     def _read(self, file_path: str):
-        for data in parse_relx_file(file_path):
+        for data in self.parser(file_path):
             yield self.text_to_instance(data["sentence"], data["label"])
