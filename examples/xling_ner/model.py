@@ -13,7 +13,7 @@ from examples.utils.embedders.luke_embedder import PretrainedLukeEmbedder
 from .metrics.span_to_label_f1 import SpanToLabelF1
 
 
-@Model.register("exhausitce_ner")
+@Model.register("exhaustive_ner")
 class ExhaustiveNERModel(Model):
     def __init__(
         self,
@@ -65,6 +65,7 @@ class ExhaustiveNERModel(Model):
         labels: torch.LongTensor = None,
         entity_ids: torch.LongTensor = None,
         entity_position_ids: torch.LongTensor = None,
+        input_words: List[List[str]] = None,
         **kwargs,
     ):
 
@@ -104,7 +105,7 @@ class ExhaustiveNERModel(Model):
         logits = self.classifier(feature_vector)
         prediction_logits, prediction = logits.max(dim=-1)
 
-        output_dict = {"logits": logits, "prediction": prediction}
+        output_dict = {"logits": logits, "prediction": prediction, "input": input_words}
 
         if labels is not None:
             output_dict["loss"] = self.criterion(logits.flatten(0, 1), labels.flatten())

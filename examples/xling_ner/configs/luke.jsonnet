@@ -7,7 +7,7 @@ local entity_vocab_path = std.extVar("ENTITY_VOCAB_PATH");
 base + {
     "dataset_reader": base["dataset_reader"],
     "model": {
-        "type": "exhausitce_ner",
+        "type": "exhaustive_ner",
         "embedder": {
                     "type": "luke",
                     "pretrained_weight_path": pretrained_weight_path,

@@ -4,7 +4,7 @@ local base = import "lib/base.libsonnet";
 
 base + {
     "model": {
-        "type": "exhausitce_ner",
+        "type": "exhaustive_ner",
         "embedder": {
                     "type": "pretrained_transformer",
                         "model_name": transformers_model_name
