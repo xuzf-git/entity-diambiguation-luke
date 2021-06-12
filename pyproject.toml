@@ -6,7 +6,7 @@ version = "0.1.0"
 
 [tool.poetry.dependencies]
 Click = "*"
-comet-ml = {version = "*", optional ma= true}
+comet-ml = {version = "*", optional = true}
 joblib = "*"
 marisa-trie = "*"
 numpy = "*"
