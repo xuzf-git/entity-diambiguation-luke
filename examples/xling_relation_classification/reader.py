@@ -7,10 +7,15 @@ from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import SpanField, TextField, LabelField, ArrayField, MetadataField
 
 
-E1_START = "<e1>"
-E1_END = "</e1>"
-E2_START = "<e2>"
-E2_END = "</e2>"
+ENT = "<ent>"
+ENT2 = "<ent2>"
+
+
+def list_rindex(li, x):
+    for i in reversed(range(len(li))):
+        if li[i] == x:
+            return i
+    raise ValueError("{} is not in list".format(x))
 
 
 def parse_kbp37_or_relx_file(path: str):
@@ -21,6 +26,10 @@ def parse_kbp37_or_relx_file(path: str):
 
             # make kbp37 data look like relx
             input_sentence = input_sentence.strip('"').strip().replace(" .", ".")
+
+            # replace entity special tokens
+            input_sentence = input_sentence.replace("<e1>", ENT).replace("</e1>", ENT)
+            input_sentence = input_sentence.replace("<e2>", ENT2).replace("</e2>", ENT2)
             yield {"example_id": example_id, "sentence": input_sentence, "label": label}
 
 
@@ -30,8 +39,8 @@ def parse_tacred_file(path: str):
     for example in json.load(open(path, "r")):
         tokens = example["token"]
         spans = [
-            ((example["subj_start"], E1_START), (example["subj_end"] + 1, E1_END)),
-            ((example["obj_start"], E2_START), (example["obj_end"] + 1, E2_END)),
+            ((example["subj_start"], ENT), (example["subj_end"] + 1, ENT)),
+            ((example["obj_start"], ENT2), (example["obj_end"] + 1, ENT2)),
         ]
 
         # carefully insert special tokens in a specific order
@@ -75,10 +84,10 @@ class RelationClassificationReader(DatasetReader):
 
         texts = [t.text for t in tokens]
 
-        e1_start_position = texts.index(E1_START)
-        e1_end_position = texts.index(E1_END)
-        e2_start_position = texts.index(E2_START)
-        e2_end_position = texts.index(E2_END)
+        e1_start_position = texts.index(ENT)
+        e1_end_position = list_rindex(texts, ENT)
+        e2_start_position = texts.index(ENT2)
+        e2_end_position = list_rindex(texts, ENT2)
 
         fields = {
             "word_ids": text_field,

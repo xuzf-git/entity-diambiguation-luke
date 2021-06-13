@@ -16,7 +16,7 @@ local dataset_size = {
 };
 
 
-local extra_tokens = ["<e1>", "</e1>", "<e2>", "</e2>"];
+local extra_tokens = ["<ent>", "<ent2>"];
 
 local tokenizer = {"type": "pretrained_transformer",
                    "model_name": transformers_model_name,
