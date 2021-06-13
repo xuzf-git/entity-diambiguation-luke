@@ -9,6 +9,7 @@ from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy
 
 from examples.utils.embedders.luke_embedder import PretrainedLukeEmbedder
+from examples.utils.embedders.transformers_luke_embedder import TransformersLukeEmbedder
 
 from .metrics.span_to_label_f1 import SpanToLabelF1
 
@@ -53,7 +54,9 @@ class ExhaustiveNERModel(Model):
 
     def is_using_luke_with_entity(self) -> bool:
         # check if the token embedder is Luke
-        return isinstance(self.embedder, PretrainedLukeEmbedder) and self.embedder.output_entity_embeddings
+        return (
+            isinstance(self.embedder, PretrainedLukeEmbedder) or isinstance(self.embedder, TransformersLukeEmbedder)
+        ) and self.embedder.output_entity_embeddings
 
     def forward(
         self,

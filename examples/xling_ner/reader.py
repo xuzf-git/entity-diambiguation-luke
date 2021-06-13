@@ -5,6 +5,7 @@ import numpy as np
 from allennlp.data import Tokenizer, DatasetReader, TokenIndexer, Instance, Token
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import TextField, ArrayField, MetadataField, LabelField, ListField
+from transformers.models.luke.tokenization_luke import LukeTokenizer
 
 NON_ENTITY = "O"
 
@@ -79,6 +80,11 @@ class ConllExhaustiveReader(DatasetReader):
 
         self.encoding = encoding
         self.use_entity_feature = use_entity_feature
+
+        if isinstance(self.tokenizer.tokenizer, LukeTokenizer):
+            self.entity_id = self.tokenizer.tokenizer.entity_vocab["[MASK]"]
+        else:
+            self.entity_id = 1
 
     def data_to_instance(self, words: List[str], labels: List[str], sentence_boundaries: List[int], doc_index: str):
         if self.tokenizer is None:
@@ -167,7 +173,7 @@ class ConllExhaustiveReader(DatasetReader):
 
                     entity_start_positions.append(entity_start + 1)
                     entity_end_positions.append(entity_end)
-                    entity_ids.append(1)
+                    entity_ids.append(self.entity_id)
 
                     position_ids = list(range(entity_start + 1, entity_end + 1))
                     position_ids += [-1] * (self.max_mention_length - entity_end + entity_start)

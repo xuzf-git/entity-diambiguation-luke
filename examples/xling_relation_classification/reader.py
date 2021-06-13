@@ -78,6 +78,13 @@ class RelationClassificationReader(DatasetReader):
         self.token_indexers = token_indexers
         self.use_entity_feature = use_entity_feature
 
+        if isinstance(self.tokenizer.tokenizer, LukeTokenizer):
+            self.head_entity_id = self.tokenizer.tokenizer.entity_vocab["[MASK]"]
+            self.tail_entity_id = self.tokenizer.tokenizer.entity_vocab["[MASK2]"]
+        else:
+            self.head_entity_id = 1
+            self.tail_entity_id = 2
+
     def text_to_instance(self, sentence: str, label: str = None):
         tokens = self.tokenizer.tokenize(sentence)
         if isinstance(self.tokenizer, PretrainedTransformerTokenizer):
@@ -102,18 +109,7 @@ class RelationClassificationReader(DatasetReader):
             fields["label"] = LabelField(label)
 
         if self.use_entity_feature:
-
-            if isinstance(self.tokenizer.tokenizer, LukeTokenizer):
-                fields["entity_ids"] = ArrayField(
-                    np.array(
-                        [
-                            self.tokenizer.tokenizer.entity_vocab["[MASK]"],
-                            self.tokenizer.tokenizer.entity_vocab["[MASK2]"],
-                        ]
-                    )
-                )
-            else:
-                fields["entity_ids"] = ArrayField(np.array([1, 2]))
+             fields["entity_ids"] = ArrayField(np.array([self.head_entity_id, self.tail_entity_id]))
 
         return Instance(fields)
 
