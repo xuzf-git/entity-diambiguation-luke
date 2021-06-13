@@ -33,7 +33,7 @@ local token_indexers = {
         "grad_norm": 5,
         "num_epochs": num_epochs,
         "checkpointer": {
-            "num_serialized_models_to_keep": 0
+            "keep_most_recent_by_count": 0
         },
         "optimizer": {
             "type": "adamw",

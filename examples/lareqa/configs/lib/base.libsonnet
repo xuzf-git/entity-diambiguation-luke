@@ -37,7 +37,7 @@ local token_indexers = {
         ,
         "num_gradient_accumulation_steps": accumulation_steps,
         "checkpointer": {
-            "num_serialized_models_to_keep": 0
+            "keep_most_recent_by_count": 0
         },
         "validation_metric": "+mAP",
         "optimizer": {
