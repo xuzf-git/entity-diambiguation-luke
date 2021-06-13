@@ -6,6 +6,8 @@ from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import SpanField, TextField, LabelField, ArrayField, MetadataField
 
+from transformers.models.luke.tokenization_luke import LukeTokenizer
+
 
 ENT = "<ent>"
 ENT2 = "<ent2>"
@@ -100,7 +102,18 @@ class RelationClassificationReader(DatasetReader):
             fields["label"] = LabelField(label)
 
         if self.use_entity_feature:
-            fields["entity_ids"] = ArrayField(np.array([1, 2]))
+
+            if isinstance(self.tokenizer.tokenizer, LukeTokenizer):
+                fields["entity_ids"] = ArrayField(
+                    np.array(
+                        [
+                            self.tokenizer.tokenizer.entity_vocab["[MASK]"],
+                            self.tokenizer.tokenizer.entity_vocab["[MASK2]"],
+                        ]
+                    )
+                )
+            else:
+                fields["entity_ids"] = ArrayField(np.array([1, 2]))
 
         return Instance(fields)
 
