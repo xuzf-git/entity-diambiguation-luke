@@ -29,7 +29,7 @@ local task_data =  {
             "transformer_model_name": transformers_model_name,
             "skip_impossible_questions": false
         },
-        "dataset_size": 8714624
+        "dataset_size": 87216
     }
  };
 
