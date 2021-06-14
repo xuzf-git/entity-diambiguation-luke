@@ -8,12 +8,15 @@ base + {
     "dataset_reader": base["dataset_reader"],
     "model": {
         "type": "exhaustive_ner",
-        "embedder": {
-                    "type": "luke",
-                    "pretrained_weight_path": pretrained_weight_path,
-                    "pretrained_metadata_path": pretrained_metadata_path,
-                    "entity_vocab_path": entity_vocab_path,
-                    "discard_entity_embeddings": true
+        "feature_extractor": {
+            "type": "token",
+            "embedder": {
+                        "type": "luke",
+                        "pretrained_weight_path": pretrained_weight_path,
+                        "pretrained_metadata_path": pretrained_metadata_path,
+                        "entity_vocab_path": entity_vocab_path,
+                        "discard_entity_embeddings": true
+            }
         }
     }
 }

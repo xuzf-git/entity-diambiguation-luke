@@ -1,12 +1,8 @@
 from typing import Optional
-import json
 from overrides import overrides
 
 import torch
-from transformers import AutoConfig
-
 from allennlp.modules.token_embedders.token_embedder import TokenEmbedder
-
 from transformers.models.luke.modeling_luke import LukeModel
 
 
@@ -71,7 +67,8 @@ class TransformersLukeEmbedder(TokenEmbedder):
             entity_token_type_ids=entity_segment_ids,
             entity_attention_mask=entity_attention_mask,
         )
+
         if self.output_entity_embeddings:
-            return luke_outputs.last_hidden_state, luke_outputs.entity_last_hidden_state
+            return luke_outputs.entity_last_hidden_state
         else:
             return luke_outputs.last_hidden_state

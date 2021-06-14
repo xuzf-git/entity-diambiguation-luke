@@ -5,45 +5,29 @@ local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
 local num_epochs = std.parseInt(std.extVar("NUM_EPOCHS"));
-local num_steps_per_epoch = std.parseInt(std.extVar("NUM_STEPS_PER_EPOCH"));
+local effective_batch_size = batch_size * accumulation_steps;
 
-local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
-local tokenizer = {"type": "pretrained_transformer", "model_name": transformers_model_name, "add_special_tokens": false};
-
-local token_indexers = {
-            "tokens": {"type": "pretrained_transformer", "model_name": transformers_model_name}
-    };
+local data = import "data.libsonnet";
 
 {
-    "dataset_reader": {
-       "type": "tydi",
-       "transformers_model_name": transformers_model_name,
-       "is_evaluation": false,
-       "include_unknowns_probability": 0.1
-       },
-    "validation_dataset_reader": {
-       "type": "tydi",
-       "transformers_model_name": transformers_model_name,
-       "is_evaluation": true,
-       "include_unknowns_probability": 0.0
-       },
+    "dataset_reader": data["dataset_reader"],
+    "validation_dataset_reader": data["validation_dataset_reader"],
     "train_data_path": train_data_path,
     "validation_data_path": validation_data_path,
     "data_loader": {
         "batch_size": batch_size, "shuffle": true,
-        "num_workers": 1,
+        "num_workers": 0,
         "max_instances_in_memory": 50000
     },
      "validation_data_loader": {
-        "batch_size": batch_size, "shuffle": false, "num_workers": 1,
+        "batch_size": batch_size, "shuffle": false, "num_workers": 0,
         "max_instances_in_memory": 5000
     },
     "trainer": {
         "num_epochs": num_epochs,
         "patience": 3,
         "cuda_device": -1,
-        "grad_norm": 5.0
-        ,
+        "grad_norm": 5.0,
         "num_gradient_accumulation_steps": accumulation_steps,
         "checkpointer": {
             "keep_most_recent_by_count": 0
@@ -67,9 +51,9 @@ local token_indexers = {
         },
         "learning_rate_scheduler": {
             "type": "linear_with_warmup",
-            "warmup_steps": std.floor(num_steps_per_epoch * num_epochs / 10),
+            "warmup_steps": std.floor((data["dataset_size"] / effective_batch_size) * num_epochs / 10),
             "num_epochs": num_epochs,
-            "num_steps_per_epoch": num_steps_per_epoch
+            "num_steps_per_epoch": data["dataset_size"] / effective_batch_size
         },
     },
     "random_seed": seed,

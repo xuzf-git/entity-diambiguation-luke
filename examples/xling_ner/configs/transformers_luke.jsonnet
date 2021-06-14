@@ -6,10 +6,13 @@ base + {
     "dataset_reader": base["dataset_reader"] + {"use_entity_feature": true},
     "model": {
         "type": "exhaustive_ner",
-        "embedder": {
-            "type": "transformers-luke",
-            "model_name": transformers_model_name,
-            "output_entity_embeddings": true
+        "feature_extractor": {
+            "type": "entity",
+            "embedder": {
+                "type": "transformers-luke",
+                "model_name": transformers_model_name,
+                "output_entity_embeddings": true
             }
         }
+    }
 }

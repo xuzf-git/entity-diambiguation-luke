@@ -5,8 +5,8 @@ from pathlib import Path
 
 import torch
 
-from allennlp.training.metrics import Metric
-from examples.tydi_qa.metrics.tydi_eval import evaluate_prediction_file
+from examples.reading_comprehension_allennlp.metrics.tydiqa.tydi_eval import evaluate_prediction_file
+from examples.reading_comprehension_allennlp.metrics.qa_metric import QAMetric
 
 
 class TyDiPrediction(NamedTuple):
@@ -15,7 +15,8 @@ class TyDiPrediction(NamedTuple):
     score: float
 
 
-class TyDiMetric(Metric):
+@QAMetric.register("tydi-qa")
+class TyDiMetric(QAMetric):
     def __init__(
         self,
         gold_data_path: str,

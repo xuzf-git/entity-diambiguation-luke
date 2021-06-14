@@ -4,7 +4,7 @@ import math
 import numpy as np
 from allennlp.data import Tokenizer, DatasetReader, TokenIndexer, Instance, Token
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
-from allennlp.data.fields import TextField, ArrayField, MetadataField, LabelField, ListField
+from allennlp.data.fields import TextField, TensorField, MetadataField, LabelField, ListField
 from transformers.models.luke.tokenization_luke import LukeTokenizer
 
 NON_ENTITY = "O"
@@ -194,9 +194,9 @@ class ConllExhaustiveReader(DatasetReader):
                 end = start + entity_size
                 fields = {
                     "word_ids": TextField(word_ids, token_indexers=self.token_indexers),
-                    "entity_start_positions": ArrayField(np.array(entity_start_positions[start:end])),
-                    "entity_end_positions": ArrayField(np.array(entity_end_positions[start:end])),
-                    "original_entity_spans": ArrayField(np.array(original_entity_spans[start:end]), padding_value=-1),
+                    "entity_start_positions": TensorField(np.array(entity_start_positions[start:end])),
+                    "entity_end_positions": TensorField(np.array(entity_end_positions[start:end])),
+                    "original_entity_spans": TensorField(np.array(original_entity_spans[start:end]), padding_value=-1),
                     "labels": ListField([LabelField(l) for l in labels[start:end]]),
                     "doc_id": MetadataField(doc_index),
                 }
@@ -204,8 +204,8 @@ class ConllExhaustiveReader(DatasetReader):
                 if self.use_entity_feature:
                     fields.update(
                         {
-                            "entity_ids": ArrayField(np.array(entity_ids[start:end])),
-                            "entity_position_ids": ArrayField(np.array(entity_position_ids[start:end])),
+                            "entity_ids": TensorField(np.array(entity_ids[start:end]), padding_value=0),
+                            "entity_position_ids": TensorField(np.array(entity_position_ids[start:end])),
                         }
                     )
 

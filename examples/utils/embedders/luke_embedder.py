@@ -141,6 +141,6 @@ class PretrainedLukeEmbedder(TokenEmbedder):
         )
 
         if self.output_entity_embeddings:
-            return luke_outputs[0], luke_outputs[1]
+            return luke_outputs[1]
         else:
             return luke_outputs[0]

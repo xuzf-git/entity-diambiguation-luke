@@ -13,9 +13,9 @@ from allennlp.data.fields import TextField, LabelField, SpanField, MetadataField
 from transformers import AutoTokenizer
 
 
-from .utils.preproc import read_tydi_examples
-from .utils.data_utils import AnswerType
-from .utils.byte_utils import byte_to_char_offset, char_to_byte_offset
+from examples.reading_comprehension_allennlp.utils.preproc import read_tydi_examples
+from examples.reading_comprehension_allennlp.utils.data_utils import AnswerType
+from examples.reading_comprehension_allennlp.utils.byte_utils import byte_to_char_offset, char_to_byte_offset
 
 from examples.utils.wiki_mention_detector import WikiMentionDetector
 
@@ -43,7 +43,7 @@ def read_passage_answer_candidates(file_path: str) -> Dict[int, List[Dict[str, i
     return result
 
 
-@DatasetReader.register("tydi")
+@DatasetReader.register("tydiqa")
 class TyDiQAReader(DatasetReader):
     def __init__(
         self,
@@ -157,7 +157,7 @@ class TyDiQAReader(DatasetReader):
             input_text_field = TextField(input_tokens, token_indexers=self.token_indexers)
             assert len(input_text_field) <= self.max_sequence_length
 
-            instance = Instance({"word_ids": input_text_field})
+            instance = Instance({"question_with_context": input_text_field})
 
             question_tokens_offset = len(question_tokens) + 2
             doc_offset = doc_start - question_tokens_offset  # one for CLS, one for SEP.

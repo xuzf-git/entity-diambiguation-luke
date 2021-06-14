@@ -4,14 +4,20 @@ import torch.nn as nn
 
 from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.models import Model
+from allennlp.modules.token_embedders import TokenEmbedder
+from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy
+from examples.utils.embedders.luke_embedder import PretrainedLukeEmbedder
+from examples.utils.embedders.transformers_luke_embedder import TransformersLukeEmbedder
 
-from .modules.feature_extractor import RCFeatureExtractor
+from .modules.feature_extractor import ETFeatureExtractor
+
+
 from .metrics.multiway_f1 import MultiwayF1
 
 
-@Model.register("relation_classifier")
-class RelationClassifier(Model):
+@Model.register("entity_typing")
+class EntityTypeClassifier(Model):
     """
     Model based on
     ``Matching the Blanks: Distributional Similarity for Relation Learning``
@@ -21,10 +27,11 @@ class RelationClassifier(Model):
     def __init__(
         self,
         vocab: Vocabulary,
-        feature_extractor: RCFeatureExtractor,
+        feature_extractor: ETFeatureExtractor,
         dropout: float = 0.1,
         label_name_space: str = "labels",
         text_field_key: str = "tokens",
+        feature_type: str = "entity_start",
         ignored_labels: List[str] = None,
     ):
 
@@ -46,16 +53,16 @@ class RelationClassifier(Model):
     def forward(
         self,
         word_ids: TextFieldTensors,
-        entity1_span: torch.LongTensor,
-        entity2_span: torch.LongTensor,
+        entity_span: torch.LongTensor,
         label: torch.LongTensor = None,
         entity_ids: torch.LongTensor = None,
         input_sentence: List[str] = None,
         **kwargs,
     ):
-        feature_vector = self.feature_extractor(word_ids[self.text_field_key], entity1_span, entity2_span, entity_ids)
+        feature_vector = self.feature_extractor(word_ids[self.text_field_key], entity_span, entity_ids)
         feature_vector = self.dropout(feature_vector)
         logits = self.classifier(feature_vector)
+
         prediction_logits, prediction = logits.max(dim=-1)
 
         output_dict = {

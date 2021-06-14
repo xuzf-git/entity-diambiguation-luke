@@ -8,13 +8,16 @@ base + {
     "dataset_reader": base["dataset_reader"] + {"use_entity_feature": true},
     "model": {
         "type": "exhaustive_ner",
-        "embedder": {
-                    "type": "luke",
-                    "pretrained_weight_path": pretrained_weight_path,
-                    "pretrained_metadata_path": pretrained_metadata_path,
-                    "entity_vocab_path": entity_vocab_path,
-                    "num_special_mask_embeddings": 1,
-                    "output_entity_embeddings": true
-                }
+        "feature_extractor": {
+            "type": "entity",
+            "embedder": {
+                "type": "luke",
+                "pretrained_weight_path": pretrained_weight_path,
+                "pretrained_metadata_path": pretrained_metadata_path,
+                "entity_vocab_path": entity_vocab_path,
+                "num_special_mask_embeddings": 1,
+                "output_entity_embeddings": true
             }
+        }
+    }
 }

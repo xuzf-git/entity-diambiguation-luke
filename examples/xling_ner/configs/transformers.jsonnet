@@ -5,9 +5,12 @@ local base = import "lib/base.libsonnet";
 base + {
     "model": {
         "type": "exhaustive_ner",
-        "embedder": {
-            "type": "pretrained_transformer",
-            "model_name": transformers_model_name
+        "feature_extractor": {
+            "type": "token",
+            "embedder": {
+                "type": "pretrained_transformer",
+                "model_name": transformers_model_name
+            }
         }
     }
 }
