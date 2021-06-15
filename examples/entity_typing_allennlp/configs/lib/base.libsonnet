@@ -1,5 +1,4 @@
 local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
-local task = std.extVar("TASK");
 local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
@@ -10,17 +9,14 @@ local num_epochs = 5;
 
 local base = import "lib/base.libsonnet";
 
-local dataset_size = {
-    "kbp37": 15917,
-    "tacred": 68124
-};
+local dataset_size = 2000;
 
 
-local extra_tokens = ["<ent>", "<ent2>"];
+local extra_tokens = ["<ent>"];
 
 local tokenizer = {"type": "pretrained_transformer",
                    "model_name": transformers_model_name,
-                   "add_special_tokens": false,
+                   "add_special_tokens": true,
                    "tokenizer_kwargs": {"additional_special_tokens": extra_tokens}};
 local token_indexers = {
             "tokens": {"type": "pretrained_transformer", "model_name": transformers_model_name,
@@ -29,10 +25,9 @@ local token_indexers = {
 
 {
     "dataset_reader": {
-        "type": "relation_classification",
+        "type": "entity_typing",
         "tokenizer": tokenizer,
-        "token_indexers": token_indexers,
-        "dataset": task
+        "token_indexers": token_indexers
     },
     "train_data_path": train_data_path,
     "validation_data_path": validation_data_path,
@@ -61,11 +56,11 @@ local token_indexers = {
         },
         "learning_rate_scheduler": {
             "type": "linear_with_warmup",
-            "warmup_steps": std.floor((dataset_size[task] / effective_batch_size) * num_epochs / 10)
+            "warmup_steps": std.floor((dataset_size / effective_batch_size) * num_epochs / 10)
         },
         "num_gradient_accumulation_steps": accumulation_steps,
         "patience": 3,
-        "validation_metric": "+micro_f1"
+        "validation_metric": "+micro_fscore"
     },
     "data_loader": {"batch_size": batch_size, "shuffle": true}
 }

@@ -5,7 +5,7 @@ local base = import "lib/base.libsonnet";
 local extra_tokens = base["dataset_reader"]["tokenizer"]["tokenizer_kwargs"]["additional_special_tokens"];
 base + {
     "model": {
-        "type": "relation_classifier",
+        "type": "entity_typing",
         "feature_extractor": {
             "type": "token",
             "embedder": {

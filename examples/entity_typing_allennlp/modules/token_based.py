@@ -21,10 +21,7 @@ class TokenBasedETFeatureExtractor(ETFeatureExtractor):
         self.feature_type = feature_type
 
     def get_output_dim(self):
-        if self.feature_type == "cls_token":
-            return self.encoder.get_output_dim()
-        else:
-            return self.encoder.get_output_dim() * 2
+        return self.encoder.get_output_dim()
 
     def forward(
         self, inputs: Dict[str, torch.Tensor], entity_span: torch.LongTensor, entity_ids: torch.LongTensor = None,

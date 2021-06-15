@@ -21,9 +21,10 @@ class EntityBasedETFeatureExtractor(ETFeatureExtractor):
     def forward(
         self, inputs: Dict[str, torch.Tensor], entity_span: torch.LongTensor, entity_ids: torch.LongTensor,
     ):
-
-        inputs["entity_position_ids"] = span_to_position_ids(entity_span)
+        inputs["entity_position_ids"] = span_to_position_ids(entity_span).unsqueeze(1)
         inputs["entity_attention_mask"] = torch.ones_like(entity_ids)
         inputs["entity_ids"] = entity_ids
+        embedder_output = self.embedder(**inputs)
 
-        return self.embedder(**inputs)
+        # (batch_size, num_entities=1, embedding_size) -> (batch_size, embedding_size)
+        return embedder_output.squeeze(1)
