@@ -34,7 +34,7 @@ local token_indexers = {
     "trainer": {
         "cuda_device": -1,
         "grad_norm": 5,
-        "num_epochs": 5,
+        "num_epochs": num_epochs,
         "checkpointer": {
             "keep_most_recent_by_count": 0
         },
