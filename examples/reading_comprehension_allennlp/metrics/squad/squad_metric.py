@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import torch
+from transformers import AutoTokenizer
 
 from allennlp.training.metrics import Metric
 from examples.reading_comprehension_allennlp.metrics.qa_metric import QAMetric
@@ -15,15 +16,14 @@ class SQuADPrediction(NamedTuple):
     score: float
 
 
-def detokenize(answer_tokens: List[str]):
-    assert False, "TODO: do something better."
-    return "".join(answer_tokens)
-
-
 @QAMetric.register("squad-v1.1")
 class SQuADMetric(Metric):
     def __init__(
-        self, gold_data_path: str, prediction_dump_path: str, validation_metric: str = "f1",
+        self,
+        gold_data_path: str,
+        prediction_dump_path: str,
+        transformers_tokenizer_name: str,
+        validation_metric: str = "f1",
     ):
         super().__init__()
         self.document_predictions = defaultdict(list)
@@ -32,6 +32,8 @@ class SQuADMetric(Metric):
         assert Path(gold_data_path).exists()
         self.gold_data_path = gold_data_path
         self.prediction_dump_path = prediction_dump_path
+
+        self._tokenizer = AutoTokenizer.from_pretrained(transformers_tokenizer_name)
 
         self.validation_metric = validation_metric
 
@@ -52,7 +54,7 @@ class SQuADMetric(Metric):
             if start == end == 0:
                 answer = None
             else:
-                answer = detokenize(metadata["input_tokens"][start : end + 1])
+                answer = self._tokenizer.convert_tokens_to_string(metadata["input_tokens"][start : end + 1])
             self.document_predictions[metadata["example_id"]].append(SQuADPrediction(answer, score))
 
     def get_metric(self, reset: bool) -> float:
