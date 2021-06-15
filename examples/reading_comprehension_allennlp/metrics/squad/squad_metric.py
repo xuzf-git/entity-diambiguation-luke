@@ -63,7 +63,7 @@ class SQuADMetric(Metric):
 
         prediction_dict = {}
         for example_id, predictions in self.document_predictions.items():
-            prediction = max(predictions, key=lambda x: x.score)
+            prediction, score = max(predictions, key=lambda x: x.score)
             prediction_dict[example_id] = prediction
 
         prediction_dump_path = self.prediction_dump_path + f"_{self.count}"
