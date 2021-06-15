@@ -5,7 +5,7 @@ local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 local batch_size = 4;
 local accumulation_steps = 1;
 local effective_batch_size = batch_size * accumulation_steps;
-local num_epochs = 3;
+local num_epochs = 5;
 
 local base = import "lib/base.libsonnet";
 

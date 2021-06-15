@@ -1,9 +1,7 @@
 from typing import Dict, List
 import json
-from pathlib import Path
 import numpy as np
 from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
-from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import SpanField, TextField, MultiLabelField, ArrayField, MetadataField
 
 from transformers.models.luke.tokenization_luke import LukeTokenizer

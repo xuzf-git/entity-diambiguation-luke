@@ -31,7 +31,7 @@ class EntityTypeClassifier(Model):
         self.criterion = nn.BCEWithLogitsLoss()
 
         self.metrics = {}
-        self.f1_score = F1MultiLabelMeasure(average="micro")
+        self.f1_score = F1MultiLabelMeasure(average="micro", threshold=0.0)
 
     def forward(
         self,
