@@ -68,7 +68,7 @@ class SQuADMetric(Metric):
 
         prediction_dump_path = self.prediction_dump_path + f"_{self.count}"
         with open(prediction_dump_path, "w") as f:
-            json.dump(predictions, f, indent=4)
+            json.dump(prediction_dict, f, indent=4)
 
         self.count += 1
 
