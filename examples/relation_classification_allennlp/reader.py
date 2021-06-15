@@ -7,17 +7,7 @@ from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import SpanField, TextField, LabelField, ArrayField, MetadataField
 
 from transformers.models.luke.tokenization_luke import LukeTokenizer
-
-
-ENT = "<ent>"
-ENT2 = "<ent2>"
-
-
-def list_rindex(li, x):
-    for i in reversed(range(len(li))):
-        if li[i] == x:
-            return i
-    raise ValueError("{} is not in list".format(x))
+from examples.utils.util import ENT, ENT2, list_rindex
 
 
 def parse_kbp37_or_relx_file(path: str):
@@ -87,8 +77,6 @@ class RelationClassificationReader(DatasetReader):
 
     def text_to_instance(self, sentence: str, label: str = None):
         tokens = self.tokenizer.tokenize(sentence)
-        if isinstance(self.tokenizer, PretrainedTransformerTokenizer):
-            tokens = self.tokenizer.add_special_tokens(tokens)
         text_field = TextField(tokens, token_indexers=self.token_indexers)
 
         texts = [t.text for t in tokens]
@@ -109,7 +97,7 @@ class RelationClassificationReader(DatasetReader):
             fields["label"] = LabelField(label)
 
         if self.use_entity_feature:
-             fields["entity_ids"] = ArrayField(np.array([self.head_entity_id, self.tail_entity_id]))
+            fields["entity_ids"] = ArrayField(np.array([self.head_entity_id, self.tail_entity_id]))
 
         return Instance(fields)
 

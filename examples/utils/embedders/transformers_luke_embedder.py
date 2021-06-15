@@ -57,7 +57,6 @@ class TransformersLukeEmbedder(TokenEmbedder):
 
         if self.output_entity_embeddings:
             assert entity_ids is not None
-
         luke_outputs = self.luke_model(
             input_ids=token_ids,
             token_type_ids=type_ids,

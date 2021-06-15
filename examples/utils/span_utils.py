@@ -5,7 +5,7 @@ def get_span_max_length(span: torch.LongTensor) -> int:
     return (span[:, 1] - span[:, 0] + 1).max().item()
 
 
-def span_to_position_ids(self, span: torch.LongTensor, max_length: int = None) -> torch.LongTensor:
+def span_to_position_ids(span: torch.LongTensor, max_length: int = None) -> torch.LongTensor:
     batch_size = span.size(0)
     max_length = max_length or get_span_max_length(span)
     position_ids = span.new_full((batch_size, max_length), fill_value=-1)

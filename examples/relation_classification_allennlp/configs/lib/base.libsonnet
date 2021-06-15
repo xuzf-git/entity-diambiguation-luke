@@ -20,7 +20,7 @@ local extra_tokens = ["<ent>", "<ent2>"];
 
 local tokenizer = {"type": "pretrained_transformer",
                    "model_name": transformers_model_name,
-                   "add_special_tokens": false,
+                   "add_special_tokens": true,
                    "tokenizer_kwargs": {"additional_special_tokens": extra_tokens}};
 local token_indexers = {
             "tokens": {"type": "pretrained_transformer", "model_name": transformers_model_name,
@@ -65,7 +65,7 @@ local token_indexers = {
         },
         "num_gradient_accumulation_steps": accumulation_steps,
         "patience": 3,
-        "validation_metric": "+micro_f1"
+        "validation_metric": "+micro_fscore"
     },
     "data_loader": {"batch_size": batch_size, "shuffle": true}
 }

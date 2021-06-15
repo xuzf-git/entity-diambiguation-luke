@@ -69,7 +69,7 @@ class MultiwayF1(Metric):
         f1 = 2 * precision * recall / (precision + recall)
         return f1
 
-    def get_micro_f1(self) -> float:
+    def get_micro_fscore(self) -> float:
         num_correct_predictions = self._get_sum_wihout_ignored_labels(self._num_correct_by_label)
         if num_correct_predictions == 0:
             return 0
@@ -87,10 +87,10 @@ class MultiwayF1(Metric):
             | set(self._num_gold_by_label.keys())
             | set(self._num_correct_by_label.keys())
         )
-        macro_f1_score = np.mean(
+        macro_fscore_score = np.mean(
             [self.get_f1_by_label(label) for label in all_labels if label not in self.ignored_labels]
         )
-        micro_f1_score = self.get_micro_f1()
+        micro_fscore_score = self.get_micro_fscore()
         if reset:
             self.reset()
-        return {"macro_f1": macro_f1_score, "micro_f1": micro_f1_score}
+        return {"macro_fscore": macro_fscore_score, "micro_fscore": micro_fscore_score}

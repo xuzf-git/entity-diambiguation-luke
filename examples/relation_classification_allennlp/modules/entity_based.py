@@ -16,7 +16,7 @@ class EntityBasedRCFeatureExtractor(RCFeatureExtractor):
         self.embedder = embedder
 
     def get_output_dim(self):
-        return self.embedder.get_output_dim()
+        return self.embedder.get_output_dim() * 2
 
     def forward(
         self,
@@ -36,7 +36,8 @@ class EntityBasedRCFeatureExtractor(RCFeatureExtractor):
         inputs["entity_position_ids"] = entity_position_ids
         inputs["entity_attention_mask"] = torch.ones_like(entity_ids)
         inputs["entity_ids"] = entity_ids
+        embedder_outputs = self.embedder(**inputs)
+        batch_size = embedder_outputs.size(0)
 
-        return self.embedder(**inputs)
-
-
+        # (batch_size, 2, feature_size) -> (batch_size, 2 * feature_size)
+        return embedder_outputs.view(batch_size, -1)
