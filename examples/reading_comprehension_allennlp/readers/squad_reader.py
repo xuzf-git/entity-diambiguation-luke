@@ -14,6 +14,8 @@ class SquadReader(TransformerSquadReader):
                 {
                     "question_with_context": instance["question_with_context"],
                     "answer_span": instance["answer_span"],
-                    "metadata": MetadataField({"input_tokens": input_tokens}),
+                    "metadata": MetadataField(
+                        {"input_tokens": input_tokens, "example_id": instance["metadata"].metadata["id"]}
+                    ),
                 }
             )
