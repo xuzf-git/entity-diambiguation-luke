@@ -6,7 +6,8 @@ local lr = 1e-5;
 local batch_size = 4;
 local accumulation_steps = 2;
 local num_epochs = 5;
-local num_steps_per_epoch = 22128;
+local effective_batch_size = batch_size * accumulation_steps;
+local num_steps_per_epoch = 22128 / effective_batch_size;
 
 local base = import "lib/base.libsonnet";
 
