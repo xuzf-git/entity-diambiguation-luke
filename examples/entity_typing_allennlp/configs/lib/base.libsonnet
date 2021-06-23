@@ -2,10 +2,11 @@ local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
 local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
+local lr = 1e-5;
 local batch_size = 4;
 local accumulation_steps = 1;
+local num_epochs = 3;
 local effective_batch_size = batch_size * accumulation_steps;
-local num_epochs = 5;
 
 local base = import "lib/base.libsonnet";
 
@@ -40,7 +41,7 @@ local token_indexers = {
         },
         "optimizer": {
             "type": "adamw",
-            "lr": 1e-5,
+            "lr": lr,
             "weight_decay": 0.01,
             "parameter_groups": [
                 [
@@ -59,7 +60,7 @@ local token_indexers = {
             "warmup_steps": std.floor((dataset_size / effective_batch_size) * num_epochs / 10)
         },
         "num_gradient_accumulation_steps": accumulation_steps,
-        "patience": 2,
+        "patience": 3,
         "validation_metric": "+micro_fscore"
     },
     "data_loader": {"batch_size": batch_size, "shuffle": true}

@@ -1,10 +1,11 @@
 local seed = std.parseInt(std.extVar("SEED"));
-local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
-local accumulation_steps = std.parseInt(std.extVar("ACCUMULATION_STEPS"));
 local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
-local num_epochs = std.parseInt(std.extVar("NUM_EPOCHS"));
+local lr =  1.5e-5;
+local batch_size = 6;
+local accumulation_steps = 8;
+local num_epochs = 2;
 local effective_batch_size = batch_size * accumulation_steps;
 
 local data = import "data.libsonnet";
@@ -35,7 +36,7 @@ local data = import "data.libsonnet";
         "validation_metric": "-loss",
         "optimizer": {
             "type": "adamw",
-            "lr": 2e-5,
+            "lr": lr,
             "weight_decay": 0.01,
             "parameter_groups": [
                 [

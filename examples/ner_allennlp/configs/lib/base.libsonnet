@@ -3,11 +3,11 @@ local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 local test_data_path = std.extVar("TEST_DATA_PATH");
 
-local batch_size = std.parseInt(std.extVar("BATCH_SIZE"));
-local accumulation_steps = std.parseInt(std.extVar("ACCUMULATION_STEPS"));
-
-local num_epochs = std.parseInt(std.extVar("NUM_EPOCHS"));
-local num_steps_per_epoch = std.parseInt(std.extVar("NUM_STEPS_PER_EPOCH"));
+local lr = 1e-5;
+local batch_size = 8;
+local accumulation_steps = 1;
+local num_epochs = 5;
+local num_steps_per_epoch = 22128;
 
 local base = import "lib/base.libsonnet";
 
@@ -37,7 +37,7 @@ local token_indexers = {
         },
         "optimizer": {
             "type": "adamw",
-            "lr": 2e-5,
+            "lr": lr,
             "weight_decay": 0.01,
             "parameter_groups": [
                 [

@@ -3,10 +3,12 @@ local task = std.extVar("TASK");
 local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
-local batch_size = 8;
+local lr = 1e-5;
+local batch_size = 32;
 local accumulation_steps = 1;
-local effective_batch_size = batch_size * accumulation_steps;
 local num_epochs = 5;
+local effective_batch_size = batch_size * accumulation_steps;
+
 
 local base = import "lib/base.libsonnet";
 
@@ -39,13 +41,13 @@ local token_indexers = {
     "trainer": {
         "cuda_device": -1,
         "grad_norm": 5,
-        "num_epochs": 5,
+        "num_epochs": num_epochs,
         "checkpointer": {
             "keep_most_recent_by_count": 0
         },
         "optimizer": {
             "type": "adamw",
-            "lr": 2e-5,
+            "lr": lr,
             "weight_decay": 0.01,
             "parameter_groups": [
                 [
