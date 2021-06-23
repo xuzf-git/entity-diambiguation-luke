@@ -4,8 +4,8 @@ local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
 local lr = 1e-5;
-local batch_size = 32;
-local accumulation_steps = 1;
+local batch_size = 16;
+local accumulation_steps = 2;
 local num_epochs = 5;
 local effective_batch_size = batch_size * accumulation_steps;
 
