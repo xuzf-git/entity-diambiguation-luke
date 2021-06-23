@@ -1,3 +1,4 @@
+local seed = std.parseInt(std.extVar("SEED"));
 local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
 local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
@@ -63,5 +64,8 @@ local token_indexers = {
         "patience": 3,
         "validation_metric": "+micro_fscore"
     },
-    "data_loader": {"batch_size": batch_size, "shuffle": true}
+    "data_loader": {"batch_size": batch_size, "shuffle": true},
+    "random_seed": seed,
+    "numpy_seed": seed,
+    "pytorch_seed": seed
 }
