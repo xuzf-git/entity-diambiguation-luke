@@ -1,7 +1,6 @@
 local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
 local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
-local test_data_path = std.extVar("TEST_DATA_PATH");
 
 local lr = 1e-5;
 local batch_size = 8;
@@ -27,7 +26,6 @@ local token_indexers = {
     },
     "train_data_path": train_data_path,
     "validation_data_path": validation_data_path,
-    "test_data_path": test_data_path,
     "trainer": {
         "cuda_device": -1,
         "grad_norm": 5,
