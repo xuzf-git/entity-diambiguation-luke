@@ -4,7 +4,7 @@ local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
 local lr = 1e-5;
 local batch_size = 2;
-local accumulation_steps = 4;
+local accumulation_steps = 1;
 local num_epochs = 5;
 local effective_batch_size = batch_size * accumulation_steps;
 local num_steps_per_epoch = 22128 / effective_batch_size;
