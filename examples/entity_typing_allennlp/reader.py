@@ -52,7 +52,7 @@ class EntityTypingReader(DatasetReader):
             ent_start_position += 1
             ent_end_position += 1
 
-        tokens = [Token(t.text) for t in texts]
+        tokens = [Token(t) for t in texts]
         text_field = TextField(tokens, token_indexers=self.token_indexers)
         fields = {
             "word_ids": text_field,
