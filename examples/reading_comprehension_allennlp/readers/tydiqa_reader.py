@@ -8,7 +8,7 @@ import numpy as np
 from allennlp.data import Instance, Token
 from allennlp.data import DatasetReader
 from allennlp.data.token_indexers import PretrainedTransformerIndexer
-from allennlp.data.fields import TextField, LabelField, SpanField, MetadataField, ArrayField
+from allennlp.data.fields import TextField, LabelField, SpanField, MetadataField, TensorField
 
 from transformers import AutoTokenizer
 
@@ -286,7 +286,7 @@ class TyDiQAReader(DatasetReader):
 
         entity_feature_fields = {}
         for name, feature in entity_features.items():
-            entity_feature_fields[name] = ArrayField(np.array(feature), padding_value=0)
+            entity_feature_fields[name] = TensorField(np.array(feature), padding_value=0)
         return entity_feature_fields
 
 

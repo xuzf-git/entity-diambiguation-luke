@@ -7,7 +7,7 @@ import numpy as np
 
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data import DatasetReader, Instance, Tokenizer, TokenIndexer, Token
-from allennlp.data.fields import MetadataField, TextField, ArrayField
+from allennlp.data.fields import MetadataField, TextField, TensorField
 
 from luke.utils.sentence_tokenizer import SentenceTokenizer
 from .utils.sentence_breaker import SQuADSentenceTokenizer
@@ -144,7 +144,7 @@ class LAReQAReader(DatasetReader):
 
         entity_feature_fields = {}
         for name, feature in entity_features.items():
-            entity_feature_fields[name] = ArrayField(np.array(feature), padding_value=0)
+            entity_feature_fields[name] = TensorField(np.array(feature), padding_value=0)
         return entity_feature_fields
 
     def _read(self, file_path: str):

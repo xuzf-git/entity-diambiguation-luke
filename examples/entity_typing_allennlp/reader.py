@@ -2,7 +2,7 @@ from typing import Dict, List
 import json
 import numpy as np
 from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
-from allennlp.data.fields import SpanField, TextField, MultiLabelField, ArrayField, MetadataField
+from allennlp.data.fields import SpanField, TextField, MultiLabelField, TensorField, MetadataField
 
 from transformers.models.luke.tokenization_luke import LukeTokenizer
 from examples.utils.util import ENT, list_rindex
@@ -60,7 +60,7 @@ class EntityTypingReader(DatasetReader):
             fields["labels"] = MultiLabelField(labels)
 
         if self.use_entity_feature:
-            fields["entity_ids"] = ArrayField(np.array([self.entity_id]))
+            fields["entity_ids"] = TensorField(np.array([self.entity_id]))
 
         return Instance(fields)
 

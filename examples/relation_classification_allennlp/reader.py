@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
-from allennlp.data.fields import SpanField, TextField, LabelField, ArrayField, MetadataField
+from allennlp.data.fields import SpanField, TextField, LabelField, TensorField, MetadataField
 
 from transformers.models.luke.tokenization_luke import LukeTokenizer
 from examples.utils.util import ENT, ENT2, list_rindex
@@ -97,7 +97,7 @@ class RelationClassificationReader(DatasetReader):
             fields["label"] = LabelField(label)
 
         if self.use_entity_feature:
-            fields["entity_ids"] = ArrayField(np.array([self.head_entity_id, self.tail_entity_id]))
+            fields["entity_ids"] = TensorField(np.array([self.head_entity_id, self.tail_entity_id]))
 
         return Instance(fields)
 

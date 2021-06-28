@@ -52,14 +52,28 @@ class EntityVocab(object):
 
         # allow tsv files for backward compatibility
         if vocab_file.endswith(".tsv"):
+            logger.info("Detected vocab file type: tsv")
             self._parse_tsv_vocab_file(vocab_file)
-        else:
+        elif vocab_file.endswith(".jsonl"):
+            logger.info("Detected vocab file type: jsonl")
             self._parse_jsonl_vocab_file(vocab_file)
+        else:
+            logger.info("Detected vocab file type: pretrained")
+            self._from_pretrained(vocab_file)
 
         self.special_token_ids = {}
         for special_token in SPECIAL_TOKENS:
             special_token_entity = self.search_across_languages(special_token)[0]
             self.special_token_ids[special_token] = self.get_id(*special_token_entity)
+
+    def _from_pretrained(self, transformer_model_name: str):
+        from transformers.models.luke.tokenization_luke import LukeTokenizer
+
+        title_to_idx = LukeTokenizer.from_pretrained(transformer_model_name)
+        for entity, idx in title_to_idx.items():
+            self.vocab[entity] = idx
+            self.counter[entity] = None
+            self.inv_vocab[idx] = [entity]
 
     def _parse_tsv_vocab_file(self, vocab_file: str):
         with open(vocab_file, "r") as f:
