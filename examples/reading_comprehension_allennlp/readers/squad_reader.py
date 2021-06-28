@@ -49,7 +49,7 @@ class SquadReader(TransformerSquadReader):
             )
 
             if self.mention_detector is not None:
-                index = instance["metadata"].metadata["id"]
+                index = instance["metadata"].metadata["example_id"]
                 entity_features = self.get_entity_features(
                     instance["question_with_context"], title=idx_to_title_mapping[index]
                 )
