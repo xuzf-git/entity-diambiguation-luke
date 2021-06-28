@@ -2,7 +2,7 @@ from typing import Dict
 import json
 from pathlib import Path
 import numpy as np
-from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
+from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance, Token
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import SpanField, TextField, LabelField, TensorField, MetadataField
 
@@ -76,15 +76,22 @@ class RelationClassificationReader(DatasetReader):
             self.tail_entity_id = 2
 
     def text_to_instance(self, sentence: str, label: str = None):
-        tokens = self.tokenizer.tokenize(sentence)
-        text_field = TextField(tokens, token_indexers=self.token_indexers)
-
-        texts = [t.text for t in tokens]
+        texts = [t.text for t in self.tokenizer.tokenize(sentence)]
 
         e1_start_position = texts.index(ENT)
         e1_end_position = list_rindex(texts, ENT)
         e2_start_position = texts.index(ENT2)
         e2_end_position = list_rindex(texts, ENT2)
+
+        if self.use_entity_feature:
+            # do not include the positions of the special ENT tokens
+            e1_start_position += 1
+            e2_start_position += 1
+            e1_end_position -= 1
+            e2_end_position -= 1
+
+        tokens = [Token(t) for t in texts]
+        text_field = TextField(tokens, token_indexers=self.token_indexers)
 
         fields = {
             "word_ids": text_field,
