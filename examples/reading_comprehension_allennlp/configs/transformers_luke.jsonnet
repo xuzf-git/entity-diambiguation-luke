@@ -19,7 +19,7 @@ base + {
             "type": "basic",
             "token_embedders": {
                 "tokens": {
-                    "type": "pretrained_transformer",
+                    "type": "transformers-luke",
                     "model_name": transformers_model_name,
                     "tokenizer_kwargs": {"additional_special_tokens": data["extra_tokens"]}
                     }

@@ -4,12 +4,7 @@ import torch.nn as nn
 
 from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.models import Model
-from allennlp.modules.token_embedders import TokenEmbedder
-from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy
-
-from examples.utils.embedders.luke_embedder import PretrainedLukeEmbedder
-from examples.utils.embedders.transformers_luke_embedder import TransformersLukeEmbedder
 
 from .modules.feature_extractor import NERFeatureExtractor
 from .metrics.span_to_label_f1 import SpanToLabelF1
@@ -24,7 +19,6 @@ class ExhaustiveNERModel(Model):
         dropout: float = 0.1,
         label_name_space: str = "labels",
         text_field_key: str = "tokens",
-        combine_word_and_entity_features: bool = False,
     ):
         super().__init__(vocab=vocab)
         self.feature_extractor = feature_extractor
