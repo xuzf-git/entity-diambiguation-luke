@@ -63,6 +63,8 @@ class SquadReader(TransformerSquadReader):
                 for key, value in entity_features.items():
                     instance.add_field(key, value)
 
+            yield instance
+
     def get_entity_features(self, tokens: List[Token], title: str):
 
         mentions = self.mention_detector.detect_mentions(tokens, title, "en")[: self.max_num_entity_features]
