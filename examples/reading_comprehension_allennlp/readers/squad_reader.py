@@ -14,12 +14,19 @@ from examples.utils.wiki_mention_detector import WikiMentionDetector
 
 @DatasetReader.register("transformers_squad")
 class SquadReader(TransformerSquadReader):
-    def __init__(self, transformer_model_name: str, mention_detector: WikiMentionDetector = None, **kwargs):
+    def __init__(
+        self,
+        transformer_model_name: str,
+        mention_detector: WikiMentionDetector = None,
+        max_num_entity_features: int = 128,
+        **kwargs
+    ):
         super().__init__(transformer_model_name, **kwargs)
         if mention_detector is not None:
             mention_detector.set_tokenizer(self._tokenizer.tokenizer)
 
         self.mention_detector = mention_detector
+        self.max_num_entity_features = max_num_entity_features
 
     def _get_idx_to_title_mapping(self, file_path: str) -> Dict[str, str]:
         data = json.load(open(file_path, "r"))["data"]
