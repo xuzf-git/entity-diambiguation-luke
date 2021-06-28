@@ -1,7 +1,7 @@
 from typing import Dict, List
 import json
 import numpy as np
-from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance
+from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance, Token
 from allennlp.data.fields import SpanField, TextField, MultiLabelField, TensorField, MetadataField
 
 from transformers.models.luke.tokenization_luke import LukeTokenizer
@@ -42,14 +42,18 @@ class EntityTypingReader(DatasetReader):
             self.entity_id = 1
 
     def text_to_instance(self, sentence: str, labels: List[str] = None):
-        tokens = self.tokenizer.tokenize(sentence)
-        text_field = TextField(tokens, token_indexers=self.token_indexers)
-
-        texts = [t.text for t in tokens]
+        texts = [t.text for t in self.tokenizer.tokenize(sentence)]
 
         ent_start_position = texts.index(ENT)
         ent_end_position = list_rindex(texts, ENT)
 
+        if self.use_entity_feature:
+            # do not include the positions of the special ENT tokens
+            ent_start_position += 1
+            ent_end_position += 1
+
+        tokens = [Token(t.text) for t in texts]
+        text_field = TextField(tokens, token_indexers=self.token_indexers)
         fields = {
             "word_ids": text_field,
             "entity_span": SpanField(ent_start_position, ent_end_position, text_field),
