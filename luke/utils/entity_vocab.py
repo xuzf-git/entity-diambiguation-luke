@@ -71,7 +71,8 @@ class EntityVocab(object):
 
         luke_tokenizer = LukeTokenizer.from_pretrained(transformer_model_name)
         title_to_idx = luke_tokenizer.entity_vocab
-        for entity, idx in title_to_idx.items():
+        for title, idx in title_to_idx.items():
+            entity = Entity(title, None)
             self.vocab[entity] = idx
             self.counter[entity] = None
             self.inv_vocab[idx] = [entity]
