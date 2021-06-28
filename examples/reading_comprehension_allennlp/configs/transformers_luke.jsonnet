@@ -21,7 +21,6 @@ base + {
                 "tokens": {
                     "type": "transformers-luke",
                     "model_name": transformers_model_name,
-                    "tokenizer_kwargs": {"additional_special_tokens": data["extra_tokens"]}
                     }
                 }
             }
