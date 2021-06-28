@@ -12,7 +12,7 @@ local mention_detector =  {
 
 base + {
     "dataset_reader": base["dataset_reader"] + {"mention_detector": mention_detector},
-    "validation_dataset_reader": base["validation_dataset_reader"] + {"mention_detectors": mention_detectors},
+    "validation_dataset_reader": base["validation_dataset_reader"] + {"mention_detector": mention_detector},
     "model": {
         "type": "transformers_qa",
         "embedder": {
