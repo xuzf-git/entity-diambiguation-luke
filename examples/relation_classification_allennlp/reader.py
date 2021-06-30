@@ -21,6 +21,10 @@ def parse_kbp37_or_relx_file(path: str):
             # replace entity special tokens
             input_sentence = input_sentence.replace("<e1>", ENT).replace("</e1>", ENT)
             input_sentence = input_sentence.replace("<e2>", ENT2).replace("</e2>", ENT2)
+
+            # we do not need some spaces
+            sentence = sentence.replace(f" {ENT} ", f"{ENT} ")
+            sentence = sentence.replace(f" {ENT2} ", f"{ENT2} ")
             yield {"example_id": example_id, "sentence": input_sentence, "label": label}
 
 
