@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 import numpy as np
 from allennlp.data import DatasetReader, TokenIndexer, Tokenizer, Instance, Token
-from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import SpanField, TextField, LabelField, TensorField, MetadataField
 
 from transformers.models.luke.tokenization_luke import LukeTokenizer
@@ -42,7 +41,12 @@ def parse_tacred_file(path: str):
             tokens.insert(end_idx + i * 2, end_token)
             tokens.insert(start_idx + i * 2, start_token)
 
-        yield {"example_id": example["id"], "sentence": " ".join(tokens), "label": example["relation"]}
+        sentence = " ".join(tokens)
+        # we do not need some spaces
+        sentence = sentence.replace(f" {ENT} ", f"{ENT} ")
+        sentence = sentence.replace(f" {ENT2} ", f"{ENT2} ")
+
+        yield {"example_id": example["id"], "sentence": sentence, "label": example["relation"]}
 
 
 @DatasetReader.register("relation_classification")
@@ -79,22 +83,9 @@ class RelationClassificationReader(DatasetReader):
         texts = [t.text for t in self.tokenizer.tokenize(sentence)]
         e1_start_position = texts.index(ENT)
         e1_end_position = list_rindex(texts, ENT)
-        if self.use_entity_feature:
-            # remove ENT token
-            texts.pop(e1_start_position)
-            e1_end_position -= 1
-            texts.pop(e1_end_position)
 
         e2_start_position = texts.index(ENT2)
         e2_end_position = list_rindex(texts, ENT2)
-        if self.use_entity_feature:
-            # remove ENT2 token
-            texts.pop(e2_start_position)
-            e2_end_position -= 1
-            texts.pop(e2_end_position)
-            if e2_start_position < e1_start_position:
-                e1_start_position -= 2
-                e1_end_position -= 2
 
         tokens = [Token(t) for t in texts]
         text_field = TextField(tokens, token_indexers=self.token_indexers)
