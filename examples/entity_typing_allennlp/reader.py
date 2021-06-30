@@ -10,6 +10,15 @@ from examples.utils.util import ENT, list_rindex
 
 ENTITY_LABELS = {"entity", "event", "group", "location", "object", "organization", "person", "place", "time"}
 
+NORMALIZATION_TABLE = (
+    ("-LRB-", "("),
+    ("-LCB-", "("),
+    ("-LSB-", "("),
+    ("-RRB-", ")"),
+    ("-RCB-", ")"),
+    ("-RSB-", ")"),
+)
+
 
 def parse_open_entity_dataset(path: str):
     label_set = set()
@@ -19,7 +28,9 @@ def parse_open_entity_dataset(path: str):
             labels = [l for l in example["y_str"] if l in ENTITY_LABELS]
             left_context_text = " ".join(example["left_context_token"])
             right_context_text = " ".join(example["right_context_token"])
-            sentence = " ".join([left_context_text, ENT, example["mention_span"], ENT, right_context_text])
+            sentence = left_context_text + " " + ENT + example["mention_span"] + ENT + " " + right_context_text
+            for before, after in NORMALIZATION_TABLE:
+                sentence = sentence.replace(before, after)
             yield {"sentence": sentence, "labels": labels}
 
     return label_set

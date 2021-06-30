@@ -1,4 +1,3 @@
-import pytest
 from examples.entity_typing_allennlp.reader import EntityTypingReader
 from allennlp.data.tokenizers.pretrained_transformer_tokenizer import PretrainedTransformerTokenizer
 from allennlp.data.token_indexers import PretrainedTransformerIndexer
@@ -6,6 +5,7 @@ from examples.utils.util import ENT
 
 
 extra_tokens = [ENT]
+# transformer_model_name = "roberta-base"
 transformer_model_name = "bert-base-multilingual-cased"
 tokenizer = PretrainedTransformerTokenizer(
     transformer_model_name, tokenizer_kwargs={"additional_special_tokens": extra_tokens}
