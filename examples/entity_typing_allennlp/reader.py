@@ -48,9 +48,10 @@ class EntityTypingReader(DatasetReader):
         ent_end_position = list_rindex(texts, ENT)
 
         if self.use_entity_feature:
-            # do not include the positions of the special ENT tokens
-            ent_start_position += 1
-            ent_end_position += 1
+            # remove ENT token
+            texts.pop(ent_start_position)
+            ent_end_position -= 1
+            texts.pop(ent_end_position)
 
         tokens = [Token(t) for t in texts]
         text_field = TextField(tokens, token_indexers=self.token_indexers)
