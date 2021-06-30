@@ -28,7 +28,7 @@ def parse_open_entity_dataset(path: str):
             labels = [l for l in example["y_str"] if l in ENTITY_LABELS]
             left_context_text = " ".join(example["left_context_token"])
             right_context_text = " ".join(example["right_context_token"])
-            sentence = left_context_text + " " + ENT + example["mention_span"] + ENT + " " + right_context_text
+            sentence = left_context_text + " " + ENT + " " + example["mention_span"] + ENT + " " + right_context_text
             for before, after in NORMALIZATION_TABLE:
                 sentence = sentence.replace(before, after)
             yield {"sentence": sentence, "labels": labels}
@@ -57,13 +57,6 @@ class EntityTypingReader(DatasetReader):
 
         ent_start_position = texts.index(ENT)
         ent_end_position = list_rindex(texts, ENT)
-
-        if self.use_entity_feature:
-            # remove ENT token
-            texts.pop(ent_start_position)
-            ent_end_position -= 1
-            texts.pop(ent_end_position)
-            ent_end_position -= 1
 
         tokens = [Token(t) for t in texts]
         text_field = TextField(tokens, token_indexers=self.token_indexers)
