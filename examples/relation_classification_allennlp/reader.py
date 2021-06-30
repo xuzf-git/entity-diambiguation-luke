@@ -77,7 +77,6 @@ class RelationClassificationReader(DatasetReader):
 
     def text_to_instance(self, sentence: str, label: str = None):
         texts = [t.text for t in self.tokenizer.tokenize(sentence)]
-
         e1_start_position = texts.index(ENT)
         e1_end_position = list_rindex(texts, ENT)
         if self.use_entity_feature:
@@ -89,11 +88,11 @@ class RelationClassificationReader(DatasetReader):
         e2_start_position = texts.index(ENT2)
         e2_end_position = list_rindex(texts, ENT2)
         if self.use_entity_feature:
-            # remove ENT token
+            # remove ENT2 token
             texts.pop(e2_start_position)
             e2_end_position -= 1
             texts.pop(e2_end_position)
-            if e2_start_position > e1_start_position:
+            if e2_start_position < e1_start_position:
                 e1_start_position -= 2
                 e1_end_position -= 2
 
