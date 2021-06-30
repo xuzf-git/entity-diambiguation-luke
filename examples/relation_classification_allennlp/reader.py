@@ -93,6 +93,9 @@ class RelationClassificationReader(DatasetReader):
             texts.pop(e2_start_position)
             e2_end_position -= 1
             texts.pop(e2_end_position)
+            if e2_start_position > e1_start_position:
+                e1_start_position -= 2
+                e1_end_position -= 2
 
         tokens = [Token(t) for t in texts]
         text_field = TextField(tokens, token_indexers=self.token_indexers)
