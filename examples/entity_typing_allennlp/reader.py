@@ -52,6 +52,7 @@ class EntityTypingReader(DatasetReader):
             texts.pop(ent_start_position)
             ent_end_position -= 1
             texts.pop(ent_end_position)
+            ent_end_position -= 1
 
         tokens = [Token(t) for t in texts]
         text_field = TextField(tokens, token_indexers=self.token_indexers)
