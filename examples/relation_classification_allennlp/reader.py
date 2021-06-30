@@ -80,15 +80,19 @@ class RelationClassificationReader(DatasetReader):
 
         e1_start_position = texts.index(ENT)
         e1_end_position = list_rindex(texts, ENT)
+        if self.use_entity_feature:
+            # remove ENT token
+            texts.pop(e1_start_position)
+            e1_end_position -= 1
+            texts.pop(e1_end_position)
+
         e2_start_position = texts.index(ENT2)
         e2_end_position = list_rindex(texts, ENT2)
-
         if self.use_entity_feature:
-            # do not include the positions of the special ENT tokens
-            e1_start_position += 1
-            e2_start_position += 1
-            e1_end_position -= 1
+            # remove ENT token
+            texts.pop(e2_start_position)
             e2_end_position -= 1
+            texts.pop(e2_end_position)
 
         tokens = [Token(t) for t in texts]
         text_field = TextField(tokens, token_indexers=self.token_indexers)
