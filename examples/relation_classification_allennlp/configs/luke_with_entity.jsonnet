@@ -16,7 +16,7 @@ base + {
                 "pretrained_metadata_path": pretrained_metadata_path,
                 "entity_vocab_path": entity_vocab_path,
                 "num_special_mask_embeddings": 2,
-                "output_entity_embeddings": true,
+                "output_embeddings": "entity",
                 "num_additional_special_tokens": 4
             }
         },

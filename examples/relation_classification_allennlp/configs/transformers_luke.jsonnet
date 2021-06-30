@@ -11,7 +11,7 @@ base + {
             "embedder": {
                 "type": "transformers-luke",
                 "model_name": transformers_model_name,
-                "output_entity_embeddings": true
+                "output_embeddings": "entity"
             }
         },
     },

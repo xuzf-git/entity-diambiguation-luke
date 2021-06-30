@@ -7,11 +7,11 @@ base + {
     "model": {
         "type": "exhaustive_ner",
         "feature_extractor": {
-            "type": "entity",
+            "type": "token-entity",
             "embedder": {
                 "type": "transformers-luke",
                 "model_name": transformers_model_name,
-                "output_entity_embeddings": true
+                "output_embeddings": "tokens+entity"
             }
         }
     }

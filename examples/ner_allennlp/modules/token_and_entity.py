@@ -9,17 +9,16 @@ from allennlp.modules.seq2seq_encoders import PassThroughEncoder
 from .feature_extractor import NERFeatureExtractor
 
 
-@NERFeatureExtractor.register("token")
-class TokenBasedNERFeatureExtractor(NERFeatureExtractor):
+@NERFeatureExtractor.register("token-entity")
+class TokenEntityNERFeatureExtractor(NERFeatureExtractor):
     def __init__(
-        self, embedder: TokenEmbedder, encoder: Seq2SeqEncoder = None,
+        self, embedder: TokenEmbedder,
     ):
         super().__init__()
         self.embedder = embedder
-        self.encoder = encoder or PassThroughEncoder(input_dim=self.embedder.get_output_dim())
 
     def get_output_dim(self):
-        return self.encoder.get_output_dim() * 2
+        return self.embedder.get_output_dim() * 3
 
     def forward(
         self,
@@ -29,9 +28,12 @@ class TokenBasedNERFeatureExtractor(NERFeatureExtractor):
         entity_ids: torch.LongTensor = None,
         entity_position_ids: torch.LongTensor = None,
     ):
-        token_embeddings = self.embedder(**inputs)
-        token_embeddings = self.encoder(token_embeddings)
 
+        inputs["entity_ids"] = entity_ids
+        inputs["entity_position_ids"] = entity_position_ids
+        inputs["entity_attention_mask"] = entity_ids != 0
+
+        token_embeddings, entity_embeddings = self.embedder(**inputs)
         embedding_size = token_embeddings.size(-1)
 
         entity_start_positions = entity_start_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
@@ -40,6 +42,6 @@ class TokenBasedNERFeatureExtractor(NERFeatureExtractor):
         entity_end_positions = entity_end_positions.unsqueeze(-1).expand(-1, -1, embedding_size)
         end_embeddings = torch.gather(token_embeddings, -2, entity_end_positions)
 
-        feature_vector = torch.cat([start_embeddings, end_embeddings], dim=2)
+        feature_vector = torch.cat([start_embeddings, end_embeddings, entity_embeddings], dim=2)
 
         return feature_vector

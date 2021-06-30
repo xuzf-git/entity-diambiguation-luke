@@ -13,7 +13,7 @@ class TransformersLukeEmbedder(TokenEmbedder):
         model_name: str,
         train_parameters: bool = True,
         gradient_checkpointing: bool = False,
-        output_entity_embeddings: bool = False,
+        output_embeddings: str = "tokens",
     ) -> None:
         """
 
@@ -27,13 +27,14 @@ class TransformersLukeEmbedder(TokenEmbedder):
 
         gradient_checkpointing: `bool`
             Enable gradient checkpoinitng, which significantly reduce memory usage.
-        output_entity_embeddings: `bool`
-            If specified, the model returns entity embeddings instead of token embeddings.
-            If you need both, please use PretrainedLukeEmbedderWithEntity.
+        output_embeddings: `str`
+            Choose output tokens or entities.
         """
         super().__init__()
 
-        self.output_entity_embeddings = output_entity_embeddings
+        if output_embeddings not in {"tokens", "entity", "tokens+entity"}:
+            raise ValueError(f"Invalid argument: {output_embeddings}")
+        self.output_embeddings = output_embeddings
 
         self.luke_model = LukeModel.from_pretrained(model_name)
         if not train_parameters:
@@ -55,8 +56,11 @@ class TransformersLukeEmbedder(TokenEmbedder):
         entity_attention_mask: torch.LongTensor = None,
     ) -> torch.Tensor:  # type: ignore
 
-        if self.output_entity_embeddings:
-            assert entity_ids is not None
+        if "entity" in self.output_embeddings and entity_ids is None:
+            raise RuntimeError(
+                "Entity embeddings are expected but the model cannot compute entity emebddings without entity_ids."
+            )
+
         luke_outputs = self.luke_model(
             input_ids=token_ids,
             token_type_ids=type_ids,
@@ -67,7 +71,11 @@ class TransformersLukeEmbedder(TokenEmbedder):
             entity_attention_mask=entity_attention_mask,
         )
 
-        if self.output_entity_embeddings:
-            return luke_outputs.entity_last_hidden_state
-        else:
+        if self.output_embeddings == "token":
             return luke_outputs.last_hidden_state
+        elif self.output_embeddings == "entity":
+            return luke_outputs.entity_last_hidden_state
+        elif self.output_embeddings == "tokens+entity":
+            return luke_outputs.last_hidden_state, luke_outputs.entity_last_hidden_state
+        else:
+            raise RuntimeError(f"Something is wrong with self.output_embeddings: {self.output_embeddings}.")
