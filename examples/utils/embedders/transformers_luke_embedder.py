@@ -13,7 +13,7 @@ class TransformersLukeEmbedder(TokenEmbedder):
         model_name: str,
         train_parameters: bool = True,
         gradient_checkpointing: bool = False,
-        output_embeddings: str = "tokens",
+        output_embeddings: str = "token",
     ) -> None:
         """
 
@@ -32,7 +32,7 @@ class TransformersLukeEmbedder(TokenEmbedder):
         """
         super().__init__()
 
-        if output_embeddings not in {"tokens", "entity", "tokens+entity"}:
+        if output_embeddings not in {"token", "entity", "tokens+entity"}:
             raise ValueError(f"Invalid argument: {output_embeddings}")
         self.output_embeddings = output_embeddings
 
