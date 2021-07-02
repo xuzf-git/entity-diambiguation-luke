@@ -6,9 +6,6 @@ from allennlp.data.fields import MetadataField, TensorField
 from allennlp.data import DatasetReader, Instance, Token
 from allennlp_models.rc.dataset_readers import TransformerSquadReader
 
-from transformers.models.luke.tokenization_luke import LukeTokenizer
-
-
 from examples.utils.wiki_mention_detector import WikiMentionDetector
 
 
@@ -57,8 +54,9 @@ class SquadReader(TransformerSquadReader):
 
             if self.mention_detector is not None:
                 index = instance["metadata"].metadata["example_id"]
+                title = idx_to_title_mapping[index].replace("_", " ")
                 entity_features = self.get_entity_features(
-                    instance["question_with_context"], title=idx_to_title_mapping[index]
+                    instance["question_with_context"], title=title
                 )
                 for key, value in entity_features.items():
                     instance.add_field(key, value)
