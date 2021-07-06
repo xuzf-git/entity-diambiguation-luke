@@ -46,12 +46,12 @@ class SquadReader(TransformerSquadReader):
                 {
                     "question_with_context": instance["question_with_context"],
                     "answer_span": instance["answer_span"],
+                    "context_span": instance["context_span"],
                     "metadata": MetadataField(
                         {"input_tokens": input_tokens, "example_id": instance["metadata"].metadata["id"]}
                     ),
                 }
             )
-
             if self.mention_detector is not None:
                 index = instance["metadata"].metadata["example_id"]
                 title = idx_to_title_mapping[index].replace("_", " ")

@@ -1,4 +1,6 @@
-from typing import List
+from typing import List, Dict
+import itertools
+
 import torch
 import torch.nn as nn
 
@@ -26,6 +28,8 @@ class TransformersQAModel(Model):
         dropout: float = 0.1,
         answer_type_name_space: str = "answer_type",
         max_sequence_length: int = 512,
+        num_best_predictions: int = 20,
+        max_answer_length: int = 30,
         qa_metric: QAMetric = None,
     ):
 
@@ -51,12 +55,16 @@ class TransformersQAModel(Model):
             "span_accuracy": CategoricalAccuracy(),
         }
 
+        self.num_best_predictions = num_best_predictions
+        self.max_answer_length = max_answer_length
+
         self.qa_metric = qa_metric
 
     def forward(
         self,
         question_with_context: TextFieldTensors,
-        answer_span: torch.LongTensor,
+        context_span: torch.LongTensor,
+        answer_span: torch.LongTensor = None,
         answer_type: torch.LongTensor = None,
         metadata: List = None,
         entity_ids: torch.LongTensor = None,
@@ -84,16 +92,9 @@ class TransformersQAModel(Model):
         span_start_scores = span_start_endscores[:, :, 0]
         span_end_scores = span_start_endscores[:, :, 1]
 
-        span_start_prediction_score, span_start_prediction = torch.max(span_start_scores, dim=1)
-        span_end_prediction_score, span_end_prediction = torch.max(span_end_scores, dim=1)
-
         output_dict = {
             "span_start_scores": span_start_scores,
             "span_end_scores": span_end_scores,
-            "span_start_prediction_score": span_start_prediction_score - span_start_scores[:, 0],
-            "span_start_prediction": span_start_prediction,
-            "span_end_prediction_score": span_end_prediction_score - span_end_scores[:, 0],
-            "span_end_prediction": span_end_prediction,
         }
 
         if self.answer_type_name_space is not None:
@@ -125,9 +126,54 @@ class TransformersQAModel(Model):
                 output_dict["loss"] += answer_type_loss
 
         if not self.training and self.qa_metric:
+            prediction_dict = self._get_best_predictions(span_start_scores, span_end_scores, context_span)
+            output_dict.update(prediction_dict)
+
             self.qa_metric(output_dict, metadata)
 
         return output_dict
+
+    def _get_best_predictions(
+        self, span_start_scores: torch.Tensor, span_end_scores: torch.Tensor, context_span: torch.Tensor
+    ) -> Dict[str, torch.Tensor]:
+        batch_size = span_start_scores.size(0)
+        # span_start_prediction_score, span_start_prediction = torch.max(span_start_scores, dim=1)
+        # span_end_prediction_score, span_end_prediction = torch.max(span_end_scores, dim=1)
+
+        start_topk = torch.topk(span_start_scores, k=self.num_best_predictions, dim=1, sorted=True)
+        end_topk = torch.topk(span_end_scores, k=self.num_best_predictions, dim=1, sorted=True)
+
+        prediction_score_list = []
+        prediction_list = []
+        # the first loop is loop over the batch dimension
+        for topk_start, topk_end, c_span in zip(zip(*start_topk), zip(*end_topk), context_span):
+            prediction_candidates = []
+            for (s_score, s_idx), (e_score, e_idx) in itertools.product(zip(*topk_start), zip(*topk_end)):
+                # skip if the predicted span is ill-formed.
+                if s_idx > e_idx:
+                    continue
+
+                # skip if the predicted span is not pointed to CLS (null prediction) and outside the context span.
+                if not s_idx == e_idx == 0 and (s_idx < c_span[0] or e_idx > c_span[1]):
+                    continue
+
+                # skip if the predicted span is logner than max_answer_length.
+                if e_idx - s_idx + 1 > self.max_answer_length:
+                    continue
+
+                prediction_candidates.append((s_idx, e_idx, s_score + e_score))
+
+            best_s_idx, best_e_idx, best_score = max(prediction_candidates, key=lambda x: x[2])
+            prediction_score_list.append(best_score)
+            prediction_list.append((best_s_idx, best_e_idx))
+
+        null_prediction_score = (span_start_scores[:, 0] + span_end_scores[:, 0]).detach().cpu()
+        prediction_score = torch.LongTensor(prediction_score_list)
+        span_prediction = torch.LongTensor(prediction_list)
+        return {
+            "prediction_score": prediction_score - null_prediction_score,
+            "span_prediction": span_prediction,
+        }
 
     def get_metrics(self, reset: bool = False):
         metric_results = {k: metric.get_metric(reset=reset) for k, metric in self.metrics.items()}

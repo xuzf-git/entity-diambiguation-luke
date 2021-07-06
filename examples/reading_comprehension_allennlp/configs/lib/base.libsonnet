@@ -54,7 +54,7 @@ local data = import "data.libsonnet";
             "type": "linear_with_warmup",
             "warmup_steps": std.floor((data["dataset_size"] / effective_batch_size) * num_epochs * 0.06),
             "num_epochs": num_epochs,
-            "num_steps_per_epoch": data["dataset_size"] / effective_batch_size
+            "num_steps_per_epoch": std.floor(data["dataset_size"] / effective_batch_size)
         },
     },
     "random_seed": seed,

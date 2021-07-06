@@ -45,12 +45,8 @@ class TyDiMetric(QAMetric):
 
     def __call__(self, output_dict: Dict[str, torch.Tensor], metadata_list: List[Dict]):
 
-        prediction_score = (
-            output_dict["span_start_prediction_score"] + output_dict["span_end_prediction_score"]
-        ).tolist()
-        for metadata, start, end, score in zip(
-            metadata_list, output_dict["span_start_prediction"], output_dict["span_end_prediction"], prediction_score,
-        ):
+        prediction_score = output_dict["prediction_score"].tolist()
+        for metadata, (start, end), score in zip(metadata_list, output_dict["span_prediction"], prediction_score,):
             token_to_contexts_byte_mapping = metadata["token_to_contexts_byte_mapping"]
             contexts_start_byte_offset = token_to_contexts_byte_mapping[start.item()][0]
             contexts_end_byte_offset = token_to_contexts_byte_mapping[end.item()][1]

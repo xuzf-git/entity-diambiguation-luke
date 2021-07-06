@@ -156,8 +156,14 @@ class TyDiQAReader(DatasetReader):
             input_tokens = [Token(t) for t in input_tokens]
             input_text_field = TextField(input_tokens, token_indexers=self.token_indexers)
             assert len(input_text_field) <= self.max_sequence_length
-
-            instance = Instance({"question_with_context": input_text_field})
+            instance = Instance(
+                {
+                    "question_with_context": input_text_field,
+                    "context_span": SpanField(
+                        len(question_tokens) + 2, len(input_tokens) - 2, sequence_field=input_text_field
+                    ),
+                }
+            )
 
             question_tokens_offset = len(question_tokens) + 2
             doc_offset = doc_start - question_tokens_offset  # one for CLS, one for SEP.
