@@ -4,9 +4,9 @@ local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
 local lr = 1e-5;
-local batch_size = 2;
+local batch_size = 8;
 local accumulation_steps = 1;
-local num_epochs = 3;
+local num_epochs = 5;
 local effective_batch_size = batch_size * accumulation_steps;
 
 local base = import "lib/base.libsonnet";
@@ -35,7 +35,6 @@ local token_indexers = {
     "validation_data_path": validation_data_path,
     "trainer": {
         "cuda_device": -1,
-        "grad_norm": 5,
         "num_epochs": num_epochs,
         "checkpointer": {
             "keep_most_recent_by_count": 0
@@ -43,6 +42,8 @@ local token_indexers = {
         "optimizer": {
             "type": "adamw",
             "lr": lr,
+            "betas": [0.9, 0.98],
+            "eps": 1e-6,
             "weight_decay": 0.01,
             "parameter_groups": [
                 [
@@ -58,7 +59,7 @@ local token_indexers = {
         },
         "learning_rate_scheduler": {
             "type": "linear_with_warmup",
-            "warmup_steps": std.floor((dataset_size / effective_batch_size) * num_epochs / 10)
+            "warmup_steps": std.floor((dataset_size / effective_batch_size) * num_epochs * 0.06)
         },
         "num_gradient_accumulation_steps": accumulation_steps,
         "patience": 3,
