@@ -1,4 +1,4 @@
-from examples.entity_typing_allennlp.reader import EntityTypingReader
+from examples.entity_typing.reader import EntityTypingReader
 from allennlp.data.tokenizers.pretrained_transformer_tokenizer import PretrainedTransformerTokenizer
 from allennlp.data.token_indexers import PretrainedTransformerIndexer
 from examples.utils.util import ENT
@@ -16,7 +16,7 @@ token_indexers = {
     )
 }
 
-test_data_path = "examples/entity_typing_allennlp/tests/fixtures/test.json"
+test_data_path = "examples/entity_typing/tests/fixtures/test.json"
 
 
 def test_read():

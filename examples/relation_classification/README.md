@@ -29,11 +29,11 @@ export VALIDATION_DATA_PATH="data/kbp37/dev.txt";
 
 # train LUKE
 export TRANSFORMERS_MODEL_NAME="studio-ousia/luke-base";
-poetry run allennlp train examples/relation_classification_allennlp/configs/transformers.jsonnet -s results/relation_classification/luke-base --include-package examples -o '{"trainer": {"cuda_device": 0}}'
+poetry run allennlp train examples/relation_classification/configs/transformers.jsonnet -s results/relation_classification/luke-base --include-package examples -o '{"trainer": {"cuda_device": 0}}'
 
 # you can also fine-tune models from the BERT family
 export TRANSFORMERS_MODEL_NAME="roberta-base";
-poetry run allennlp train examples/relation_classification_allennlp/configs/transformers_luke.jsonnet  -s results/relation_classification/roberta-base --include-package examples
+poetry run allennlp train examples/relation_classification/configs/transformers_luke.jsonnet  -s results/relation_classification/roberta-base --include-package examples
 ```
 
 # Evaluation
