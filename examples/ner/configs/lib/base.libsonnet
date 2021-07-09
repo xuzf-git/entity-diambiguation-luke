@@ -44,11 +44,11 @@ local token_indexers = {
             "type": "custom_linear_with_warmup",
             "warmup_ratio": 0.06
         },
-        "num_gradient_accumulation_steps": 1,
+        "num_gradient_accumulation_steps": 4,
         "patience": 3,
         "validation_metric": "+f1"
     },
-    "data_loader": {"batch_size": 8, "shuffle": true},
+    "data_loader": {"batch_size": 2, "shuffle": true},
     "random_seed": seed,
     "numpy_seed": seed,
     "pytorch_seed": seed

@@ -22,7 +22,7 @@ local token_indexers = {
     "validation_data_path": std.extVar("VALIDATION_DATA_PATH"),
     "trainer": {
         "cuda_device": -1,
-        "num_epochs": 5,
+        "num_epochs": 3,
         "checkpointer": {
             "keep_most_recent_by_count": 0
         },
@@ -52,7 +52,7 @@ local token_indexers = {
         "patience": 3,
         "validation_metric": "+micro_fscore"
     },
-    "data_loader": {"batch_size": 8, "shuffle": true},
+    "data_loader": {"batch_size": 4, "shuffle": true},
     "random_seed": seed,
     "numpy_seed": seed,
     "pytorch_seed": seed

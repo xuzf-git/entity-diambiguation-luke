@@ -12,7 +12,6 @@ class TransformersLukeEmbedder(TokenEmbedder):
         self,
         model_name: str,
         train_parameters: bool = True,
-        gradient_checkpointing: bool = False,
         output_embeddings: str = "token",
     ) -> None:
         """
@@ -21,12 +20,8 @@ class TransformersLukeEmbedder(TokenEmbedder):
         ----------
         model_name: str
             Model name registered in transformers
-
         train_parameters: `bool`
             Decide if tunening or freezing pre-trained weights.
-
-        gradient_checkpointing: `bool`
-            Enable gradient checkpoinitng, which significantly reduce memory usage.
         output_embeddings: `str`
             Choose output tokens or entities.
         """
