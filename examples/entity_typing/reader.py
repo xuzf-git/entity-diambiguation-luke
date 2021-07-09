@@ -21,7 +21,6 @@ NORMALIZATION_TABLE = (
 
 
 def parse_open_entity_dataset(path: str):
-    label_set = set()
     with open(path, "r") as f:
         for line in f:
             example = json.loads(line.strip())
@@ -32,8 +31,6 @@ def parse_open_entity_dataset(path: str):
             for before, after in NORMALIZATION_TABLE:
                 sentence = sentence.replace(before, after)
             yield {"sentence": sentence, "labels": labels}
-
-    return label_set
 
 
 @DatasetReader.register("entity_typing")
