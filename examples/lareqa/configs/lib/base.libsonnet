@@ -5,7 +5,6 @@ local train_data_path = std.extVar("TRAIN_DATA_PATH");
 local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
 
 local num_epochs = std.parseInt(std.extVar("NUM_EPOCHS"));
-local num_steps_per_epoch = std.parseInt(std.extVar("NUM_STEPS_PER_EPOCH"));
 
 local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
 local tokenizer = {"type": "pretrained_transformer", "model_name": transformers_model_name, "add_special_tokens": true};
@@ -57,8 +56,8 @@ local token_indexers = {
             ],
         },
         "learning_rate_scheduler": {
-            "type": "linear_with_warmup",
-            "warmup_steps": std.floor(num_steps_per_epoch * num_epochs / 10)
+            "type": "custom_linear_with_warmup",
+            "warmup_ratio": 0.06
         },
     },
     "random_seed": seed,

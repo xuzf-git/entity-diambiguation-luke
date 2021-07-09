@@ -1,16 +1,5 @@
 local seed = std.parseInt(std.extVar("SEED"));
 local transformers_model_name = std.extVar("TRANSFORMERS_MODEL_NAME");
-local train_data_path = std.extVar("TRAIN_DATA_PATH");
-local validation_data_path = std.extVar("VALIDATION_DATA_PATH");
-
-local lr = 1e-5;
-local batch_size = 2;
-local accumulation_steps = 1;
-local num_epochs = 5;
-local effective_batch_size = batch_size * accumulation_steps;
-local num_steps_per_epoch = 22128 / effective_batch_size;
-
-local base = import "lib/base.libsonnet";
 
 local tokenizer = {"type": "pretrained_transformer", "model_name": transformers_model_name,
                     "add_special_tokens": false,  "tokenizer_kwargs": {"add_prefix_space": true}};
@@ -26,18 +15,18 @@ local token_indexers = {
         "token_indexers": token_indexers,
         "encoding": "utf-8",
     },
-    "train_data_path": train_data_path,
-    "validation_data_path": validation_data_path,
+    "train_data_path": std.extVar("TRAIN_DATA_PATH"),
+    "validation_data_path": std.extVar("VALIDATION_DATA_PATH"),
     "trainer": {
         "cuda_device": -1,
         "grad_norm": 5,
-        "num_epochs": num_epochs,
+        "num_epochs": 5,
         "checkpointer": {
             "keep_most_recent_by_count": 0
         },
         "optimizer": {
             "type": "adamw",
-            "lr": lr,
+            "lr": 1e-5,
             "weight_decay": 0.01,
             "parameter_groups": [
                 [
@@ -52,14 +41,14 @@ local token_indexers = {
             ],
         },
         "learning_rate_scheduler": {
-            "type": "linear_with_warmup",
-            "warmup_steps": std.floor(num_steps_per_epoch * num_epochs / 10)
+            "type": "custom_linear_with_warmup",
+            "warmup_ratio": 0.06
         },
-        "num_gradient_accumulation_steps": accumulation_steps,
+        "num_gradient_accumulation_steps": 1,
         "patience": 3,
         "validation_metric": "+f1"
     },
-    "data_loader": {"batch_size": batch_size, "shuffle": true},
+    "data_loader": {"batch_size": 8, "shuffle": true},
     "random_seed": seed,
     "numpy_seed": seed,
     "pytorch_seed": seed

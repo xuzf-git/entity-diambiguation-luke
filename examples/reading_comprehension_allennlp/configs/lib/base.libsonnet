@@ -51,10 +51,8 @@ local data = import "data.libsonnet";
             ],
         },
         "learning_rate_scheduler": {
-            "type": "linear_with_warmup",
-            "warmup_steps": std.floor((data["dataset_size"] / effective_batch_size) * num_epochs * 0.06),
-            "num_epochs": num_epochs,
-            "num_steps_per_epoch": std.floor(data["dataset_size"] / effective_batch_size)
+            "type": "custom_linear_with_warmup",
+            "warmup_ratio": 0.06
         },
     },
     "random_seed": seed,
