@@ -18,11 +18,11 @@ export VALIDATION_DATA_PATH="data/ner/dev.conllu";
 
 # train LUKE
 export TRANSFORMERS_MODEL_NAME="studio-ousia/luke-base";
-poetry run allennlp train examples/ner/configs/transformers.jsonnet -s results/ner/luke-base --include-package examples -o '{"trainer": {"cuda_device": 0}}'
+poetry run allennlp train examples/ner/configs/transformers_luke.jsonnet -s results/ner/luke-base --include-package examples -o '{"trainer": {"cuda_device": 0}}'
 
 # you can also fine-tune models from the BERT family
 export TRANSFORMERS_MODEL_NAME="roberta-base";
-poetry run allennlp train examples/ner/configs/transformers_luke.jsonnet  -s results/ner/roberta-base --include-package examples
+poetry run allennlp train examples/ner/configs/transformers.jsonnet  -s results/ner/roberta-base --include-package examples
 ```
 
 # Evaluation

@@ -22,6 +22,7 @@ For the TACRED dataset, you need to access through [LDC](https://catalog.ldc.upe
 We configure some parameters through environmental variables.  
 Note that you need provide what dataset you are dealing with through `TASK`.
 ```bash
+export SEED=0;
 export TRANSFORMERS_MODEL_NAME="luke";
 export TASK="kbp37"; # or "tacred".
 export TRAIN_DATA_PATH="data/kbp37/train.txt";
@@ -29,11 +30,11 @@ export VALIDATION_DATA_PATH="data/kbp37/dev.txt";
 
 # train LUKE
 export TRANSFORMERS_MODEL_NAME="studio-ousia/luke-base";
-poetry run allennlp train examples/relation_classification/configs/transformers.jsonnet -s results/relation_classification/luke-base --include-package examples -o '{"trainer": {"cuda_device": 0}}'
+poetry run allennlp train examples/relation_classification/configs/transformers_luke.jsonnet -s results/relation_classification/luke-base --include-package examples -o '{"trainer": {"cuda_device": 0}}'
 
 # you can also fine-tune models from the BERT family
 export TRANSFORMERS_MODEL_NAME="roberta-base";
-poetry run allennlp train examples/relation_classification/configs/transformers_luke.jsonnet  -s results/relation_classification/roberta-base --include-package examples
+poetry run allennlp train examples/relation_classification/configs/transformers.jsonnet  -s results/relation_classification/roberta-base --include-package examples
 ```
 
 # Evaluation
@@ -41,7 +42,7 @@ poetry run allennlp train examples/relation_classification/configs/transformers_
 poetry run allennlp evaluate RESULT_SAVE_DIR INPUT_FILE --include-package examples --output-file OUTPUT_FILE 
 
 # example for LUKE
-poetry run allennlp evaluate results/relation_classification/luke-base data/ultrafine_acl18/crowd/test.json --include-package examples --output-file results/relation_classification/luke-base/metrics_test.json --cuda 0
+poetry run allennlp evaluate results/relation_classification/luke-base data/kbp37/test.txt --include-package examples --output-file results/relation_classification/luke-base/metrics_test.json --cuda 0
 ```
 
 # Make Prediction
@@ -49,6 +50,6 @@ poetry run allennlp evaluate results/relation_classification/luke-base data/ultr
 poetry run allennlp predict RESULT_SAVE_DIR INPUT_FILE --use-dataset-reader --include-package examples --cuda-device CUDA_DEVICE --output-file OUTPUT_FILE
 
 # example for LUKE
-poetry run allennlp predict results/relation_classification/luke-base data/ultrafine_acl18/crowd/dev.json --use-dataset-reader --include-package examples --cuda-device 0 --output-file results/relation_classification/luke-base/prediction.json
+poetry run allennlp predict results/relation_classification/luke-base data/kbp37/dev.txt --use-dataset-reader --include-package examples --cuda-device 0 --output-file results/relation_classification/luke-base/prediction.json
 ```
 
