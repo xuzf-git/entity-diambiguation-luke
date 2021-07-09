@@ -112,18 +112,10 @@ def cli(ctx, **kwargs):
 from examples.entity_disambiguation.main import cli as entity_disambiguation_cli
 
 cli.add_command(entity_disambiguation_cli)
-from examples.entity_typing.main import cli as entity_typing_cli
 
-cli.add_command(entity_typing_cli)
-from examples.ner.main import cli as ner_cli
-
-cli.add_command(ner_cli)
 from examples.reading_comprehension.main import cli as reading_comprehension_cli
 
 cli.add_command(reading_comprehension_cli)
-from examples.relation_classification.main import cli as relation_classification_cli
-
-cli.add_command(relation_classification_cli)
 
 from examples.entity_span_qa.main import cli as entity_span_qa_cli
 
