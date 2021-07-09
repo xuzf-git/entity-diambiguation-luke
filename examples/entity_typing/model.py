@@ -46,9 +46,7 @@ class EntityTypeClassifier(Model):
         feature_vector = self.dropout(feature_vector)
         logits = self.classifier(feature_vector)
 
-        output_dict = {
-            "input": input_sentence,
-        }
+        output_dict = {"input": input_sentence, "prediction": torch.softmax(logits, dim=-1)}
 
         if labels is not None:
             output_dict["loss"] = self.criterion(logits, labels.float())
