@@ -17,8 +17,7 @@ local token_indexers = {
     "dataset_reader": {
         "type": "relation_classification",
         "tokenizer": tokenizer,
-        "token_indexers": token_indexers,
-        "dataset": std.extVar("TASK")
+        "token_indexers": token_indexers
     },
     "train_data_path": std.extVar("TRAIN_DATA_PATH"),
     "validation_data_path": std.extVar("VALIDATION_DATA_PATH"),

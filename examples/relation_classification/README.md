@@ -3,18 +3,7 @@ In this code, you can experiment with the task of relation classification with s
 
 
 #####  English 
-* [KBP37](https://arxiv.org/abs/1508.01006)
 * [TACRED](https://www.aclweb.org/anthology/D17-1004/)
-
-#####  Multilingual Evaluation
-* [RELX](https://www.aclweb.org/anthology/2020.findings-emnlp.32/)
-
-# Download datasets
-```bash
-cd data
-git clone https://github.com/zhangdongxu/kbp37.git
-git clone https://github.com/boun-tabi/RELX.git
-```
 
 For the TACRED dataset, you need to access through [LDC](https://catalog.ldc.upenn.edu/LDC2018T24).
 
@@ -24,9 +13,8 @@ Note that you need provide what dataset you are dealing with through `TASK`.
 ```bash
 export SEED=0;
 export TRANSFORMERS_MODEL_NAME="luke";
-export TASK="kbp37"; # or "tacred".
-export TRAIN_DATA_PATH="data/kbp37/train.txt";
-export VALIDATION_DATA_PATH="data/kbp37/dev.txt";
+export TRAIN_DATA_PATH="data/tacred/train.json";
+export VALIDATION_DATA_PATH="data/tacred/dev.json";
 
 # train LUKE
 export TRANSFORMERS_MODEL_NAME="studio-ousia/luke-base";
@@ -42,7 +30,7 @@ poetry run allennlp train examples/relation_classification/configs/transformers.
 poetry run allennlp evaluate RESULT_SAVE_DIR INPUT_FILE --include-package examples --output-file OUTPUT_FILE 
 
 # example for LUKE
-poetry run allennlp evaluate results/relation_classification/luke-base data/kbp37/test.txt --include-package examples --output-file results/relation_classification/luke-base/metrics_test.json --cuda 0
+poetry run allennlp evaluate results/relation_classification/luke-base data/tacred/test.json --include-package examples --output-file results/relation_classification/luke-base/metrics_test.json --cuda 0
 ```
 
 # Make Prediction
@@ -50,6 +38,6 @@ poetry run allennlp evaluate results/relation_classification/luke-base data/kbp3
 poetry run allennlp predict RESULT_SAVE_DIR INPUT_FILE --use-dataset-reader --include-package examples --cuda-device CUDA_DEVICE --output-file OUTPUT_FILE
 
 # example for LUKE
-poetry run allennlp predict results/relation_classification/luke-base data/kbp37/dev.txt --use-dataset-reader --include-package examples --cuda-device 0 --output-file results/relation_classification/luke-base/prediction.json
+poetry run allennlp predict results/relation_classification/luke-base data/tacred/dev.json --use-dataset-reader --include-package examples --cuda-device 0 --output-file results/relation_classification/luke-base/prediction.json
 ```
 

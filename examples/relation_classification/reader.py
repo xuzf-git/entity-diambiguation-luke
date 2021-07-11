@@ -9,25 +9,6 @@ from transformers.models.luke.tokenization_luke import LukeTokenizer
 from examples.utils.util import ENT, ENT2, list_rindex
 
 
-def parse_kbp37_or_relx_file(path: str):
-    with open(path, "r") as f:
-        for instance in f.read().strip().split("\n\n"):
-            input_line, label = instance.strip().split("\n")
-            example_id, sentence = input_line.split("\t")
-
-            # make kbp37 data look like relx
-            sentence = sentence.strip('"').strip().replace(" .", ".")
-
-            # replace entity special tokens
-            sentence = sentence.replace("<e1>", ENT).replace("</e1>", ENT)
-            sentence = sentence.replace("<e2>", ENT2).replace("</e2>", ENT2)
-
-            # remove some spaces
-            sentence = sentence.replace(f" {ENT} ", f"{ENT} ")
-            sentence = sentence.replace(f" {ENT2} ", f"{ENT2} ")
-            yield {"example_id": example_id, "sentence": sentence, "label": label}
-
-
 def parse_tacred_file(path: str):
     if Path(path).suffix != ".json":
         raise ValueError(f"{path} does not seem to be a json file. We currently only supports the json format file.")
@@ -56,22 +37,11 @@ def parse_tacred_file(path: str):
 @DatasetReader.register("relation_classification")
 class RelationClassificationReader(DatasetReader):
     def __init__(
-        self,
-        dataset: str,
-        tokenizer: Tokenizer,
-        token_indexers: Dict[str, TokenIndexer],
-        use_entity_feature: bool = False,
-        **kwargs,
+        self, tokenizer: Tokenizer, token_indexers: Dict[str, TokenIndexer], use_entity_feature: bool = False, **kwargs,
     ):
         super().__init__(**kwargs)
 
-        if dataset == "kbp37":
-            self.parser = parse_kbp37_or_relx_file
-        elif dataset == "tacred":
-            self.parser = parse_tacred_file
-        else:
-            raise ValueError(f"Valid values: [kbp37, tacred], but we got {dataset}")
-
+        self.parser = parse_tacred_file
         self.tokenizer = tokenizer
         self.token_indexers = token_indexers
         self.use_entity_feature = use_entity_feature
