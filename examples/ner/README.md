@@ -4,10 +4,10 @@ Currently, we support the following datasets.
 
 
 #####  English
-* [CoNLL-2003 shared task](https://www.aclweb.org/anthology/P18-1009/)
+* [CoNLL-2003 shared task](https://aclanthology.org/W03-0419/)
 
 To obtain the dataset, follow the instruction in the website above.
-We assume that the files follow the CoNLL-U format.
+We assume that the files follow the CoNLL-2003 format.
 
 # Training
 We configure some parameters through environmental variables.
