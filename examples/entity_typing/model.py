@@ -42,7 +42,6 @@ class EntityTypeClassifier(Model):
         input_sentence: List[str] = None,
         **kwargs,
     ):
-        import pdb; pdb.set_trace()
         feature_vector = self.feature_extractor(word_ids[self.text_field_key], entity_span, entity_ids)
         feature_vector = self.dropout(feature_vector)
         logits = self.classifier(feature_vector)
