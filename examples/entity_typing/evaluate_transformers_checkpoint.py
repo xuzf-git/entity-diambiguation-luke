@@ -25,6 +25,7 @@ from examples.entity_typing.reader import EntityTypingReader
     "model-config-path", type=click.Path(exists=True), default="configs/lib/transformers_luke_model.jsonnet",
 )
 @click.argument("checkpoint-model-name", type=str, default="studio-ousia/luke-large-finetuned-open-entity")
+@click.argument("checkpoint-tokenizer-name", type=str, default="studio-ousia/luke-large")
 @click.option("--batch-size", type=int, default=32)
 @click.option("--cuda-device", type=int, default=0)
 @click.option("--result-save-path", type=click.Path(exists=False), default=None)
@@ -32,19 +33,38 @@ def evaluate_transformers_checkpoint(
     data_path: str,
     model_config_path: str,
     checkpoint_model_name: str,
+    checkpoint_tokenizer_name: str,
     batch_size: int,
     cuda_device: int,
     result_save_path: str,
 ):
+    """
+    Parameters
+    ----------
+    data_path : str
+        Data path to the input file.
+    model_config_path : str
+        A config file that defines the model architecture to evaluate.
+    checkpoint_model_name : str
+        The name of the checkpoint in Hugging Face Model Hub.
+    checkpoint_tokenizer_name : str
+        This should be the name of the base pre-training model because sometimes
+        the toeknizer of downstream task is not compatible with allennlp.
+    batch_size : int
+    cuda_device : int
+    result_save_path : str
+    """
     import_module_and_submodules("examples")
 
     tokenizer_kwargs = {"additional_special_tokens": ["<ent>"]}
     reader = EntityTypingReader(
         tokenizer=PretrainedTransformerTokenizer(
-            model_name=checkpoint_model_name, add_special_tokens=True, tokenizer_kwargs=tokenizer_kwargs
+            model_name=checkpoint_tokenizer_name, add_special_tokens=True, tokenizer_kwargs=tokenizer_kwargs
         ),
         token_indexers={
-            "tokens": PretrainedTransformerIndexer(model_name=checkpoint_model_name, tokenizer_kwargs=tokenizer_kwargs)
+            "tokens": PretrainedTransformerIndexer(
+                model_name=checkpoint_tokenizer_name, tokenizer_kwargs=tokenizer_kwargs
+            )
         },
         use_entity_feature=True,
     )
