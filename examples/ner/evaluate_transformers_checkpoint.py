@@ -13,10 +13,9 @@ from allennlp.data.data_loaders import MultiProcessDataLoader
 from allennlp.models import Model
 from allennlp.nn import util as nn_util
 
-from transformers import LukeTokenizer, LukeForEntityClassification
+from transformers import LukeTokenizer, LukeForEntitySpanClassification
 
-from examples.entity_typing.reader import EntityTypingReader
-from examples.utils.util import ENT
+from examples.ner.reader import ConllExhaustiveReader
 
 
 @click.command()
@@ -24,7 +23,7 @@ from examples.utils.util import ENT
 @click.argument(
     "model-config-path", type=click.Path(exists=True), default="configs/lib/transformers_luke_model.jsonnet",
 )
-@click.argument("checkpoint-model-name", type=str, default="studio-ousia/luke-large-finetuned-open-entity")
+@click.argument("checkpoint-model-name", type=str, default="studio-ousia/luke-large-finetuned-conll-2003")
 @click.argument("checkpoint-tokenizer-name", type=str, default="studio-ousia/luke-large")
 @click.option("--batch-size", type=int, default=32)
 @click.option("--cuda-device", type=int, default=0)
@@ -56,21 +55,20 @@ def evaluate_transformers_checkpoint(
     """
     import_module_and_submodules("examples")
 
-    tokenizer_kwargs = {"additional_special_tokens": [ENT]}
-    reader = EntityTypingReader(
+    reader = ConllExhaustiveReader(
         tokenizer=PretrainedTransformerTokenizer(
-            model_name=checkpoint_tokenizer_name, add_special_tokens=True, tokenizer_kwargs=tokenizer_kwargs
+            model_name=checkpoint_tokenizer_name, add_special_tokens=False
         ),
         token_indexers={
             "tokens": PretrainedTransformerIndexer(
-                model_name=checkpoint_tokenizer_name, tokenizer_kwargs=tokenizer_kwargs
+                model_name=checkpoint_tokenizer_name
             )
         },
         use_entity_feature=True,
     )
 
     transformers_tokenizer = LukeTokenizer.from_pretrained(checkpoint_model_name)
-    transformers_model = LukeForEntityClassification.from_pretrained(checkpoint_model_name)
+    transformers_model = LukeForEntitySpanClassification.from_pretrained(checkpoint_model_name)
 
     vocab = Vocabulary()
     vocab.add_transformer_vocab(transformers_tokenizer, "tokens")

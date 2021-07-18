@@ -13,10 +13,10 @@ from allennlp.data.data_loaders import MultiProcessDataLoader
 from allennlp.models import Model
 from allennlp.nn import util as nn_util
 
-from transformers import LukeTokenizer, LukeForEntityClassification
+from transformers import LukeTokenizer, LukeForEntityPairClassification
 
-from examples.entity_typing.reader import EntityTypingReader
-from examples.utils.util import ENT
+from examples.relation_classification.reader import RelationClassificationReader
+from examples.utils.util import ENT, ENT2
 
 
 @click.command()
@@ -56,8 +56,8 @@ def evaluate_transformers_checkpoint(
     """
     import_module_and_submodules("examples")
 
-    tokenizer_kwargs = {"additional_special_tokens": [ENT]}
-    reader = EntityTypingReader(
+    tokenizer_kwargs = {"additional_special_tokens": [ENT, ENT2]}
+    reader = RelationClassificationReader(
         tokenizer=PretrainedTransformerTokenizer(
             model_name=checkpoint_tokenizer_name, add_special_tokens=True, tokenizer_kwargs=tokenizer_kwargs
         ),
@@ -70,7 +70,7 @@ def evaluate_transformers_checkpoint(
     )
 
     transformers_tokenizer = LukeTokenizer.from_pretrained(checkpoint_model_name)
-    transformers_model = LukeForEntityClassification.from_pretrained(checkpoint_model_name)
+    transformers_model = LukeForEntityPairClassification.from_pretrained(checkpoint_model_name)
 
     vocab = Vocabulary()
     vocab.add_transformer_vocab(transformers_tokenizer, "tokens")
