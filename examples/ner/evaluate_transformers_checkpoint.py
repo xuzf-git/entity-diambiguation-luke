@@ -70,6 +70,7 @@ def evaluate_transformers_checkpoint(
     vocab.add_transformer_vocab(transformers_tokenizer, "tokens")
     num_labels = len(transformers_model.config.id2label)
     labels = [transformers_model.config.id2label[i] for i in range(num_labels)]
+    labels = ["O" if l == "NIL" else l for l in labels]
     vocab.add_tokens_to_namespace(labels, namespace="labels")
 
     # read model

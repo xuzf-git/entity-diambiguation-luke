@@ -50,15 +50,15 @@ class SpanToLabelF1(Metric):
         if not reset:
             return {}
 
-        all_predction_sequence = []
+        all_prediction_sequence = []
         all_gold_sequence = []
         for doc_id in self.gold_labels.keys():
-            all_predction_sequence.append(self.span_to_label_sequence(self.prediction[doc_id]))
+            all_prediction_sequence.append(self.span_to_label_sequence(self.prediction[doc_id]))
             all_gold_sequence.append(self.span_to_label_sequence(self.gold_labels[doc_id]))
         return dict(
-            f1=f1_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
-            precision=precision_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
-            recall=recall_score(all_gold_sequence, all_predction_sequence, scheme=IOB2),
+            f1=f1_score(all_gold_sequence, all_prediction_sequence, scheme=IOB2),
+            precision=precision_score(all_gold_sequence, all_prediction_sequence, scheme=IOB2),
+            recall=recall_score(all_gold_sequence, all_prediction_sequence, scheme=IOB2),
         )
 
     @staticmethod

@@ -7,7 +7,7 @@ from allennlp.data.tokenizers import PretrainedTransformerTokenizer
 from allennlp.data.fields import TextField, TensorField, MetadataField, LabelField, ListField
 from transformers.models.luke.tokenization_luke import LukeTokenizer
 
-NON_ENTITY = "NIL"
+NON_ENTITY = "O"
 
 
 def parse_conll_ner_data(input_file: str, encoding: str = "utf-8"):
