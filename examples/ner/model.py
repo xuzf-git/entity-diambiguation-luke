@@ -19,6 +19,7 @@ class ExhaustiveNERModel(Model):
         dropout: float = 0.1,
         label_name_space: str = "labels",
         text_field_key: str = "tokens",
+        prediction_save_path: str = None
     ):
         super().__init__(vocab=vocab)
         self.feature_extractor = feature_extractor
@@ -29,7 +30,7 @@ class ExhaustiveNERModel(Model):
         self.dropout = nn.Dropout(p=dropout)
         self.criterion = nn.CrossEntropyLoss(ignore_index=-1)
 
-        self.span_f1 = SpanToLabelF1()
+        self.span_f1 = SpanToLabelF1(self.vocab, prediction_save_path=prediction_save_path)
         self.span_accuracy = CategoricalAccuracy()
 
     def forward(
@@ -52,13 +53,12 @@ class ExhaustiveNERModel(Model):
         feature_vector = self.dropout(feature_vector)
         logits = self.classifier(feature_vector)
         prediction_logits, prediction = logits.max(dim=-1)
-
         output_dict = {"logits": logits, "prediction": prediction, "input": input_words}
 
         if labels is not None:
             output_dict["loss"] = self.criterion(logits.flatten(0, 1), labels.flatten())
             self.span_accuracy(logits, labels, mask=(labels != -1))
-            self.span_f1(prediction, labels, prediction_logits, original_entity_spans, doc_id, self.vocab)
+            self.span_f1(prediction, labels, prediction_logits, original_entity_spans, doc_id, input_words)
 
         return output_dict
 

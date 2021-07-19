@@ -199,6 +199,7 @@ class ConllExhaustiveReader(DatasetReader):
                     "original_entity_spans": TensorField(np.array(original_entity_spans[start:end]), padding_value=-1),
                     "labels": ListField([LabelField(l) for l in labels[start:end]]),
                     "doc_id": MetadataField(doc_index),
+                    "input_words": MetadataField(words),
                 }
 
                 if self.use_entity_feature:

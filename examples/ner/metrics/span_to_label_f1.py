@@ -1,4 +1,5 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
+import json
 from collections import defaultdict
 from allennlp.training.metrics import Metric
 from allennlp.data import Vocabulary
@@ -9,9 +10,14 @@ from seqeval.scheme import IOB2
 
 
 class SpanToLabelF1(Metric):
-    def __init__(self):
+    def __init__(self, vocab: Vocabulary, label_namespace: str = "labels", prediction_save_path: str = None):
+        self.vocab = vocab
+        self.label_namespace = label_namespace
+
         self.prediction = defaultdict(list)
         self.gold_labels = defaultdict(list)
+        self.doc_id_to_words: Dict[str, List[str]] = {}
+        self.prediction_save_path = prediction_save_path
 
     def __call__(
         self,
@@ -20,11 +26,19 @@ class SpanToLabelF1(Metric):
         prediction_scores: torch.Tensor,
         original_entity_spans: torch.Tensor,
         doc_id: List[str],
-        vocab: Vocabulary,
+        input_words: List[List[str]] = None,
     ):
+
+        if self.prediction_save_path is not None and input_words is None:
+            raise RuntimeError("If you want to dump predictions, you need input_words.")
+
         prediction, gold_labels, prediction_scores, original_entity_spans = self.detach_tensors(
             prediction, gold_labels, prediction_scores, original_entity_spans
         )
+
+        if input_words is not None:
+            for id_, words in zip(doc_id, input_words):
+                self.doc_id_to_words[id_] = words
 
         for pred, gold, scores, spans, id_ in zip(
             prediction, gold_labels, prediction_scores, original_entity_spans, doc_id
@@ -36,8 +50,8 @@ class SpanToLabelF1(Metric):
             for p, g, score, span in zip(pred, gold, scores, spans):
                 if g == -1:
                     continue
-                p = vocab.get_token_from_index(p, namespace="labels")
-                g = vocab.get_token_from_index(g, namespace="labels")
+                p = self.vocab.get_token_from_index(p, namespace=self.label_namespace)
+                g = self.vocab.get_token_from_index(g, namespace=self.label_namespace)
 
                 self.prediction[id_].append((score, span, p))
                 self.gold_labels[id_].append((0, span, g))
@@ -52,9 +66,18 @@ class SpanToLabelF1(Metric):
 
         all_prediction_sequence = []
         all_gold_sequence = []
+        results = []
         for doc_id in self.gold_labels.keys():
-            all_prediction_sequence.append(self.span_to_label_sequence(self.prediction[doc_id]))
-            all_gold_sequence.append(self.span_to_label_sequence(self.gold_labels[doc_id]))
+            prediction = self.span_to_label_sequence(self.prediction[doc_id])
+            gold = self.span_to_label_sequence(self.gold_labels[doc_id])
+            all_prediction_sequence.append(prediction)
+            all_gold_sequence.append(gold)
+            results.append({"words": self.doc_id_to_words[doc_id], "gold": gold, "prediction": prediction})
+
+        if self.prediction_save_path is not None:
+            with open(self.prediction_save_path, "w") as f:
+                json.dump(results, f, indent=4)
+
         return dict(
             f1=f1_score(all_gold_sequence, all_prediction_sequence, scheme=IOB2),
             precision=precision_score(all_gold_sequence, all_prediction_sequence, scheme=IOB2),

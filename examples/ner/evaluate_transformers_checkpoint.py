@@ -28,6 +28,7 @@ from examples.ner.reader import ConllExhaustiveReader
 @click.option("--batch-size", type=int, default=32)
 @click.option("--cuda-device", type=int, default=0)
 @click.option("--result-save-path", type=click.Path(exists=False), default=None)
+@click.option("--prediction-save-path", type=click.Path(exists=False), default=None)
 def evaluate_transformers_checkpoint(
     data_path: str,
     model_config_path: str,
@@ -36,6 +37,7 @@ def evaluate_transformers_checkpoint(
     batch_size: int,
     cuda_device: int,
     result_save_path: str,
+    prediction_save_path: str
 ):
     """
     Expected results for CoNLL-2003 NER English test set.
@@ -78,6 +80,8 @@ def evaluate_transformers_checkpoint(
 
     # read model
     params = Params.from_file(model_config_path, ext_vars={"TRANSFORMERS_MODEL_NAME": checkpoint_model_name})
+    if prediction_save_path is not None:
+        params["prediction_save_path"] = prediction_save_path
     model = Model.from_params(params, vocab=vocab)
     model.classifier = transformers_model.classifier
     model.eval()

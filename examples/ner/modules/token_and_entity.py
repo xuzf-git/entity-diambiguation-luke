@@ -2,8 +2,6 @@ from typing import Dict
 import torch
 
 from allennlp.modules.token_embedders import TokenEmbedder
-from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
-from allennlp.modules.seq2seq_encoders import PassThroughEncoder
 
 
 from .feature_extractor import NERFeatureExtractor
