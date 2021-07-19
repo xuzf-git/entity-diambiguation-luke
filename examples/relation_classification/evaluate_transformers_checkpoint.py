@@ -24,7 +24,7 @@ from examples.utils.util import ENT, ENT2
 @click.argument(
     "model-config-path", type=click.Path(exists=True), default="configs/lib/transformers_luke_model.jsonnet",
 )
-@click.argument("checkpoint-model-name", type=str, default="studio-ousia/luke-large-finetuned-open-entity")
+@click.argument("checkpoint-model-name", type=str, default="studio-ousia/luke-large-finetuned-tacred")
 @click.argument("checkpoint-tokenizer-name", type=str, default="studio-ousia/luke-large")
 @click.option("--batch-size", type=int, default=32)
 @click.option("--cuda-device", type=int, default=0)
