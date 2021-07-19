@@ -38,6 +38,9 @@ def evaluate_transformers_checkpoint(
     result_save_path: str,
 ):
     """
+    Expected results for CoNLL-2003 NER English test set.
+    {'f1': 0.9461946902654867, 'precision': 0.945859872611465, 'recall': 0.9465297450424929}
+
     Parameters
     ----------
     data_path : str
