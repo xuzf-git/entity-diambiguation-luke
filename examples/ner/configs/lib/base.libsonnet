@@ -10,7 +10,7 @@ local token_indexers = {
 
 {
     "dataset_reader": {
-        "type": "conll_exhaustive",
+        "type": "conll_span",
         "tokenizer": tokenizer,
         "token_indexers": token_indexers,
         "encoding": "utf-8",

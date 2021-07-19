@@ -55,7 +55,7 @@ def check_add_prefix_space(tokenizer: Tokenizer):
             assert transformer_tokenizer.add_prefix_space
 
 
-@DatasetReader.register("conll_exhaustive")
+@DatasetReader.register("conll_span")
 class ConllExhaustiveReader(DatasetReader):
     def __init__(
         self,

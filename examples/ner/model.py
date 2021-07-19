@@ -10,7 +10,7 @@ from .modules.feature_extractor import NERFeatureExtractor
 from .metrics.span_to_label_f1 import SpanToLabelF1
 
 
-@Model.register("exhaustive_ner")
+@Model.register("span_ner")
 class ExhaustiveNERModel(Model):
     def __init__(
         self,
