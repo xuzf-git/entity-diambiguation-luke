@@ -39,6 +39,9 @@ def evaluate_transformers_checkpoint(
     result_save_path: str,
 ):
     """
+    Expected results for ``test.json`` from the TACRED dataset:
+    {'accuracy': 0.8887742601070346, 'macro_fscore': 0.5886632942601121, 'micro_fscore': 0.7267450297489478}.
+
     Parameters
     ----------
     data_path : str
@@ -98,7 +101,7 @@ def evaluate_transformers_checkpoint(
             batch = nn_util.move_to_device(batch, device)
             output_dict = model(**batch)
 
-    metrics = model.get_metrics()
+    metrics = model.get_metrics(reset=True)
     print(metrics)
     if result_save_path is not None:
         with open(result_save_path, "w") as f:

@@ -92,7 +92,7 @@ def evaluate_transformers_checkpoint(
             batch = nn_util.move_to_device(batch, device)
             output_dict = model(**batch)
 
-    metrics = model.get_metrics()
+    metrics = model.get_metrics(reset=True)
     print(metrics)
     if result_save_path is not None:
         with open(result_save_path, "w") as f:

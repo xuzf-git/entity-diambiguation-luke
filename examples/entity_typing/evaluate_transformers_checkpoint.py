@@ -39,6 +39,9 @@ def evaluate_transformers_checkpoint(
     result_save_path: str,
 ):
     """
+    Expected results for ``test.json`` from the Open Entity dataset:
+    {'micro_precision': 0.7997806072235107, 'micro_recall': 0.7657563090324402, 'micro_fscore': 0.7823987007141113}.
+
     Parameters
     ----------
     data_path : str
@@ -98,7 +101,7 @@ def evaluate_transformers_checkpoint(
             batch = nn_util.move_to_device(batch, device)
             output_dict = model(**batch)
 
-    metrics = model.get_metrics()
+    metrics = model.get_metrics(reset=True)
     print(metrics)
     if result_save_path is not None:
         with open(result_save_path, "w") as f:
