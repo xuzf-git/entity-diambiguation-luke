@@ -57,13 +57,9 @@ def evaluate_transformers_checkpoint(
 
     reader = ConllExhaustiveReader(
         tokenizer=PretrainedTransformerTokenizer(
-            model_name=checkpoint_tokenizer_name, add_special_tokens=False
+            model_name=checkpoint_tokenizer_name, add_special_tokens=False, tokenizer_kwargs={"add_prefix_space": True}
         ),
-        token_indexers={
-            "tokens": PretrainedTransformerIndexer(
-                model_name=checkpoint_tokenizer_name
-            )
-        },
+        token_indexers={"tokens": PretrainedTransformerIndexer(model_name=checkpoint_tokenizer_name)},
         use_entity_feature=True,
     )
 
