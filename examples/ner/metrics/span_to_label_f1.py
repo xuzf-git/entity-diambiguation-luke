@@ -76,7 +76,7 @@ class SpanToLabelF1(Metric):
 
         if self.prediction_save_path is not None:
             with open(self.prediction_save_path, "w") as f:
-                json.dump(results, f, indent=4)
+                json.dump(results, f)
 
         return dict(
             f1=f1_score(all_gold_sequence, all_prediction_sequence, scheme=IOB2),
