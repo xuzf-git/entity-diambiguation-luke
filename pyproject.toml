@@ -15,16 +15,14 @@ pyjnius = {version = "*", optional = true}
 python = "^3.6.1"
 sentencepiece = "*"
 seqeval = "*"
-tensorflow = "1.15.3"
+tensorflow = "*"
 torch = "*"
 tqdm = "*"
 transformers = "4.6.0"
 ujson = "*"
-wikipedia2vec = "*"
 allennlp = "2.5.0"
-jupyter = {version = "^1.0.0", optional = true}
-matplotlib = {version = "^3.3.4", optional = true}
-allennlp-models = "^2.1.0"
+tensorboard = "1.15.0"
+wikipedia2vec = "^1.0.5"
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"
@@ -37,7 +35,6 @@ pytest = "^5.2"
 comet = ["comet-ml"]
 icu = ["pyicu"]
 opennlp = ["pyjnius"]
-dev_utils = ["jupyter", "matplotlib"]
 
 [tool.poetry.scripts]
 luke = 'luke.cli:cli'
