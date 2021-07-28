@@ -86,7 +86,7 @@ task, the SQuAD-compatible gold Passage (GoldP) task.
 import collections
 
 from absl import logging
-import examples_allennlp.reading_comprehension_allennlp.metrics.tydiqa.eval_utils as eval_utils
+import examples_allennlp.reading_comprehension.metrics.tydiqa.eval_utils as eval_utils
 
 
 def score_passage_answer(gold_label_list, pred_label, passage_non_null_threshold):

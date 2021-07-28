@@ -12,10 +12,9 @@ from allennlp.data.fields import TextField, LabelField, SpanField, MetadataField
 
 from transformers import AutoTokenizer
 
-
-from examples_allennlp.reading_comprehension_allennlp import read_tydi_examples
-from examples_allennlp.reading_comprehension_allennlp.utils.data_utils import AnswerType
-from examples_allennlp.reading_comprehension_allennlp.utils.byte_utils import byte_to_char_offset, char_to_byte_offset
+from examples_allennlp.reading_comprehension.utils.preproc import read_tydi_examples
+from examples_allennlp.reading_comprehension.utils.data_utils import AnswerType
+from examples_allennlp.reading_comprehension.utils.byte_utils import byte_to_char_offset, char_to_byte_offset
 
 from examples_allennlp.utils.wiki_mention_detector import WikiMentionDetector
 

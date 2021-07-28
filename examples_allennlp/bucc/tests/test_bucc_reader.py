@@ -1,4 +1,4 @@
-from examples_allennlp.bucc import BUCCReader
+from examples_allennlp.bucc.reader import BUCCReader
 
 from allennlp.data.tokenizers import SpacyTokenizer
 from allennlp.data.token_indexers import SingleIdTokenIndexer

@@ -9,7 +9,7 @@ from allennlp.models import Model
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.training.metrics import CategoricalAccuracy, Average
-from examples_allennlp.reading_comprehension_allennlp.metrics import QAMetric
+from examples_allennlp.reading_comprehension.metrics.qa_metric import QAMetric
 
 
 @Model.register("transformers_qa")

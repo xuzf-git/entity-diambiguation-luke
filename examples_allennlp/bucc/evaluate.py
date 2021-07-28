@@ -7,11 +7,11 @@ import sys
 
 sys.path.append("./")
 
-from examples_allennlp.bucc import read_gold_sentence_pairs
-from examples.utils.retrieval.scoring_functions import ScoringFunction
-from examples.utils.retrieval.retrievers import Retriever
-from examples.utils.retrieval.metrics import compute_f1_score
-from examples.utils.retrieval.models import Seq2VecEncoder
+from examples_allennlp.bucc.reader import read_gold_sentence_pairs
+from examples_allennlp.utils.retrieval.scoring_functions import ScoringFunction
+from examples_allennlp.utils.retrieval.retrievers import Retriever
+from examples_allennlp.utils.retrieval.metrics import compute_f1_score
+from examples_allennlp.utils.retrieval.models import Seq2VecEncoder
 
 from allennlp.nn import util as nn_util
 from allennlp.common.util import import_module_and_submodules

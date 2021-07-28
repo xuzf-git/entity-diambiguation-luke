@@ -8,7 +8,7 @@ from allennlp.training.metrics.average import Average
 from examples_allennlp.utils.retrieval.models import Seq2VecEncoder
 from examples_allennlp.utils.retrieval.embedding_similarity_loss import EmbeddingSimilarityLoss
 
-from examples_allennlp.lareqa import MeanAveragePrecision
+from examples_allennlp.lareqa.metrics.mean_average_precision import MeanAveragePrecision
 
 
 @Model.register("dual_encoder_retrieval")

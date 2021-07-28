@@ -126,17 +126,9 @@ from examples.entity_span_qa.main import cli as entity_span_qa_cli
 
 cli.add_command(entity_span_qa_cli)
 
-from examples.utils.wiki_mention_detector.entity_db import cli as entity_db_cli
-
-cli.add_command(entity_db_cli)
-
-from examples.utils.wiki_mention_detector.mention_db import cli as mention_db_cli
+from examples.utils.mention_db import cli as mention_db_cli
 
 cli.add_command(mention_db_cli)
-
-from examples.utils.wiki_mention_detector.wiki_link_db import cli as wiki_link_db_cli
-
-cli.add_command(wiki_link_db_cli)
 
 if __name__ == "__main__":
     cli()

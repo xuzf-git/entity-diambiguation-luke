@@ -7,8 +7,8 @@ import torch
 from transformers import AutoTokenizer
 
 from allennlp.training.metrics import Metric
-from examples_allennlp.reading_comprehension_allennlp.metrics import QAMetric
-from examples_allennlp.reading_comprehension_allennlp.metrics import evaluate_from_files
+from examples_allennlp.reading_comprehension.metrics.qa_metric import QAMetric
+from examples_allennlp.reading_comprehension.metrics.squad.squad_evaluate_v1 import evaluate_from_files
 
 
 class SQuADPrediction(NamedTuple):

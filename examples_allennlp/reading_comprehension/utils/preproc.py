@@ -26,7 +26,7 @@ import glob
 import json
 
 from absl import logging
-import examples_allennlp.reading_comprehension_allennlp.utils.data_utils as data_utils
+import examples_allennlp.reading_comprehension.utils.data_utils as data_utils
 
 
 def create_entry_from_json(

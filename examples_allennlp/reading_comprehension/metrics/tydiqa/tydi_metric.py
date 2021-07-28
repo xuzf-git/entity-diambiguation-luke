@@ -5,8 +5,8 @@ from pathlib import Path
 
 import torch
 
-from examples_allennlp.reading_comprehension_allennlp.metrics import evaluate_prediction_file
-from examples_allennlp.reading_comprehension_allennlp.metrics import QAMetric
+from examples_allennlp.reading_comprehension.metrics.tydiqa.tydi_eval import evaluate_prediction_file
+from examples_allennlp.reading_comprehension.metrics.qa_metric import QAMetric
 
 
 class TyDiPrediction(NamedTuple):
