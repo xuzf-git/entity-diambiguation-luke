@@ -1,9 +1,3 @@
-'''
-Description: None
-Author: xuzf
-Date: 2021-12-06 13:00:05
-FilePath: /luke/utils/ed_dataset.py
-'''
 # This code is based on the code obtained from here:
 # https://github.com/lephong/mulrel-nel/blob/db14942450f72c87a4d46349860e96ef2edf353d/nel/dataset.py
 
@@ -14,6 +8,8 @@ import os
 import re
 from collections import defaultdict
 import numpy as np
+
+from wikipedia2vec.dump_db import DumpDB
 
 logger = logging.getLogger(__name__)
 
@@ -502,6 +498,54 @@ def convert_documents_to_features(
             )
 
     return ret
+
+
+def create_candidate_list(dump_db_file, out_file, data_dir="data/entity-disambiguation"):
+    error = False
+    if not os.path.exists(dump_db_file):
+        error = True
+        logger.error("dump_db_file: %s does not exist" % dump_db_file)
+    if not os.path.exists(data_dir):
+        error = True
+        logger.error("data_dir: %s does not exist" % data_dir)
+    if error:
+        return
+
+    dump_db = DumpDB(dump_db_file)
+    titles = set()
+    valid_titles = frozenset(dump_db.titles())
+    reader = EntityDisambiguationDataset(data_dir)
+    for documents in reader.get_all_datasets():
+        for document in documents:
+            for mention in document.mentions:
+                candidates = mention.candidates
+                for candidate in candidates:
+                    title = dump_db.resolve_redirect(candidate.title)
+                    if title in valid_titles:
+                        titles.add(title)
+    with open(out_file, 'w', encoding='utf-8') as fout:
+        for title in titles:
+            fout.write(title + "\n")
+
+
+def create_title_list(dump_db_file, out_file):
+    if os.path.exists(dump_db_file):
+        dump_db = DumpDB(dump_db_file)
+        with open(out_file, 'w', encoding='utf-8') as fout:
+            for title in dump_db.titles():
+                fout.write(f"{title}\n")
+    else:
+        logger.error("dump_db_file: %s does not exist" % dump_db_file)
+
+
+def create_redirect_tsv(dump_db_file, out_file):
+    if os.path.exists(dump_db_file):
+        dump_db = DumpDB(dump_db_file)
+        with open(out_file, 'w', encoding='utf-8') as fout:
+            for src, dest in dump_db.redirects():
+                fout.write(f"{src}\t{dest}\n")
+    else:
+        logger.error("dump_db_file: %s does not exist" % dump_db_file)
 
 
 # if __name__=="__main__":
