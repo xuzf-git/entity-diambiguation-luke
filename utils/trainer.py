@@ -3,35 +3,36 @@ import functools
 import logging
 import os
 
-import click
+# import click
 import torch
 from tqdm import tqdm
 from transformers import WEIGHTS_NAME, AdamW, get_constant_schedule_with_warmup, get_linear_schedule_with_warmup
+import wandb
 
 logger = logging.getLogger(__name__)
 
 
-def trainer_args(func):
-    @click.option("--learning-rate", default=1e-5)
-    @click.option("--lr-schedule", default="warmup_linear", type=click.Choice(["warmup_linear", "warmup_constant"]))
-    @click.option("--weight-decay", default=0.01)
-    @click.option("--max-grad-norm", default=0.0)
-    @click.option("--adam-b1", default=0.9)
-    @click.option("--adam-b2", default=0.98)
-    @click.option("--adam-eps", default=1e-6)
-    @click.option("--adam-correct-bias", is_flag=True)
-    @click.option("--warmup-proportion", default=0.06)
-    @click.option("--gradient-accumulation-steps", default=1)
-    @click.option("--fp16", is_flag=True)
-    @click.option("--fp16-opt-level", default="O2")
-    @click.option("--fp16-min-loss-scale", default=1)
-    @click.option("--fp16-max-loss-scale", default=4)
-    @click.option("--save-steps", default=0)
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
+# def trainer_args(func):
+#     @click.option("--learning-rate", default=1e-5)
+#     @click.option("--lr-schedule", default="warmup_linear", type=click.Choice(["warmup_linear", "warmup_constant"]))
+#     @click.option("--weight-decay", default=0.01)
+#     @click.option("--max-grad-norm", default=0.0)
+#     @click.option("--adam-b1", default=0.9)
+#     @click.option("--adam-b2", default=0.98)
+#     @click.option("--adam-eps", default=1e-6)
+#     @click.option("--adam-correct-bias", is_flag=True)
+#     @click.option("--warmup-proportion", default=0.06)
+#     @click.option("--gradient-accumulation-steps", default=1)
+#     @click.option("--fp16", is_flag=True)
+#     @click.option("--fp16-opt-level", default="O2")
+#     @click.option("--fp16-min-loss-scale", default=1)
+#     @click.option("--fp16-max-loss-scale", default=4)
+#     @click.option("--save-steps", default=0)
+#     @functools.wraps(func)
+#     def wrapper(*args, **kwargs):
+#         return func(*args, **kwargs)
 
-    return wrapper
+#     return wrapper
 
 
 class Trainer(object):
@@ -75,11 +76,7 @@ class Trainer(object):
         num_workers = torch.cuda.device_count()
 
         def maybe_no_sync(step):
-            if (
-                hasattr(model, "no_sync")
-                and num_workers > 1
-                and (step + 1) % self.args.gradient_accumulation_steps != 0
-            ):
+            if (hasattr(model, "no_sync") and num_workers > 1 and (step + 1) % self.args.gradient_accumulation_steps != 0):
                 return model.no_sync()
             else:
                 return contextlib.ExitStack()
@@ -118,15 +115,12 @@ class Trainer(object):
                         pbar.update()
                         global_step += 1
 
+                        wandb.log({"step": global_step, "loss": loss.item()})
+
                         if self.step_callback is not None:
                             self.step_callback(model, global_step)
 
-                        if (
-                            self.args.local_rank in (-1, 0)
-                            and self.args.output_dir
-                            and self.args.save_steps > 0
-                            and global_step % self.args.save_steps == 0
-                        ):
+                        if (self.args.local_rank in (-1, 0) and self.args.output_dir and self.args.save_steps > 0 and global_step % self.args.save_steps == 0):
                             output_dir = os.path.join(self.args.output_dir, "checkpoint-{}".format(global_step))
 
                             if hasattr(model, "module"):

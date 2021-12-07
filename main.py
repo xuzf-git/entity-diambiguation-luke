@@ -19,7 +19,7 @@ from luke.utils.entity_vocab import MASK_TOKEN, PAD_TOKEN
 from entity_disambiguation.model import LukeForEntityDisambiguation
 from utils import set_seed
 from utils.evaluate import evaluate
-from utils.trainer import Trainer, trainer_args
+from utils.trainer import Trainer
 from utils.dataset import EntityDisambiguationDataset, convert_documents_to_features
 
 import wandb
@@ -30,13 +30,13 @@ LOG_FORMAT = "[%(asctime)s] [%(levelname)s] %(message)s (%(funcName)s@%(filename
 
 def main():
     wandb.init(project="reproduce-luke-ed", entity="xuzf")
-    
+
     parser = argparse.ArgumentParser()
     # parameters
     ## experiment path
     parser.add_argument("--model-file", type=str, help='path of pre-tained model weights and config')
     parser.add_argument("--data-dir", type=str, help='path of training or evaluate data')
-    parser.add_argument("--output-dir", default="./output/results/exp_" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), help='output directory')
+    parser.add_argument("--output-dir", default="./output/results/exp-" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), help='output directory')
     ## train/eval/test scope
     parser.add_argument("--do_train", action='store_true', help='finetune model on Conll2003')
     parser.add_argument("--do_eval", action='store_true', help='eval on testb')
@@ -67,11 +67,24 @@ def main():
     with open('./config.yaml', 'r') as fconfig:
         args_config = yaml.load(fconfig, Loader=yaml.FullLoader)
     args = parser.parse_args()
+
+    if args_config['do_train'] or args.do_train:
+        train_args = args_config['train_args']
+    else:
+        train_args = dict({})
+
     for key, value in vars(args).items():
-        if not value is None and not value is False:
+        if value is None or value is False:
+            continue
+        if key in train_args.keys():
+            train_args[key] = value
+        else:
             args_config[key] = value
+    args_config['train_args'] = train_args
     with open('./config.yaml', 'w') as fconfig:
         yaml.dump(args_config, fconfig)
+    args_config.pop('train_args')
+    args_config.update(train_args)
     args = argparse.Namespace(**args_config)
 
     # 记录当前 run 的参数设置
@@ -136,7 +149,7 @@ def main():
     run(args=args)
 
 
-def run(args:argparse.Namespace):
+def run(args: argparse.Namespace):
 
     set_seed(args.seed)
 
@@ -265,7 +278,6 @@ def run(args:argparse.Namespace):
                 json.dump(results, f, indent=2, sort_keys=True)
 
     return results
-
 
 
 class EntityDisambiguationTrainer(Trainer):

@@ -2,22 +2,38 @@ context_entity_selection_order: highest_prob
 data_dir: ./data/entity_disambiguation
 do_eval: true
 do_test: true
-do_train: false
+do_train: true
 document_split_mode: per_mention
 local_rank: -1
-masked_entity_prob: 0.9
 master_port: 29500
 max_candidate_length: 30
+max_grad_norm: 1.0
 max_seq_length: 512
 model_file: ./data/luke_large_ed
 no_context_entities: false
 num_gpus: 1
 num_train_epochs: 2
-output_dir: ./output/results/exp_2021-12-07 11:43:35
+output_dir: ./output/results/exp-2021-12-07 16:55:59
 seed: 1
 test_set:
-- ace2004
-- aquaint
-train_batch_size: 1
-update_entity_bias: false
-update_entity_emb: false
+  - ace2004
+  - aquaint
+train_args:
+  adam_b1: 0.9
+  adam_b2: 0.999
+  adam_correct_bias: true
+  adam_eps: 1.0e-06
+  fp16: true
+  fp16_max_loss_scale: 4
+  fp16_min_loss_scale: 1
+  fp16_opt_level: O2
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-05
+  lr_schedule: warmup_linear
+  masked_entity_prob: 0.9
+  save_steps: 50
+  train_batch_size: 2
+  update_entity_bias: false
+  update_entity_emb: false
+  warmup_proportion: 0.1
+  weight_decay: 0.01

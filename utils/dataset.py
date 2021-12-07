@@ -431,6 +431,9 @@ def convert_documents_to_features(
 
         if len(tokens) > max_num_tokens:
             if document_split_mode == "simple":
+                # 构造 mention 位置标记，
+                # 将 token 序列中不是 mention 的位置置为 False；
+                # 将 mention 的位置置为在 doc 中 mention 的序号；
                 in_mention_flag = [False] * len(tokens)
                 for n, obj in enumerate(mention_data):
                     in_mention_flag[obj[0] : obj[1]] = [n] * (obj[1] - obj[0])
