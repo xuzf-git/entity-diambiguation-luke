@@ -12,6 +12,7 @@ logging.getLogger("transformers").setLevel(logging.WARNING)
 
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from transformers import RobertaTokenizer
 from transformers import WEIGHTS_NAME
 from luke.utils.model_utils import ModelArchive
@@ -21,7 +22,6 @@ from utils import set_seed
 from utils.evaluate import evaluate
 from utils.trainer import Trainer
 from utils.dataset import EntityDisambiguationDataset, convert_documents_to_features
-
 import wandb
 
 logger = logging.getLogger(__name__)
@@ -36,20 +36,27 @@ def main():
     ## experiment path
     parser.add_argument("--model-file", type=str, help='path of pre-tained model weights and config')
     parser.add_argument("--data-dir", type=str, help='path of training or evaluate data')
-    parser.add_argument("--output-dir", default="./output/results/exp-" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), help='output directory')
+    parser.add_argument("--output-dir",
+                        default="./output/run-" + time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()),
+                        help='output directory')
     ## train/eval/test scope
     parser.add_argument("--do_train", action='store_true', help='finetune model on Conll2003')
     parser.add_argument("--do_eval", action='store_true', help='eval on testb')
     parser.add_argument("--do_test", action='store_true', help='test on the chosen datasets')
-    parser.add_argument("--test-set", nargs='+', help='multi-select the test dataset', choices=["test_b", "test_b_ppr", "ace2004", "aquaint", "msnbc", "wikipedia", "clueweb"])
+    parser.add_argument("--test-set",
+                        nargs='+',
+                        help='multi-select the test dataset',
+                        choices=["test_b", "test_b_ppr", "ace2004", "aquaint", "msnbc", "wikipedia", "clueweb"])
     ## hardware setting
     parser.add_argument("--master-port", type=int)
     parser.add_argument("--num-gpus", type=int, help='the number of gpus')
     parser.add_argument("--local-rank",
                         type=int,
-                        help='local_rank is used in the case of multiple gpus, so local_rank is valid only when num_gpus > 0.\
-                        it exactly represents the GPU index used in the current process,\
-                        (local_rank=-1) means to use the default cuda; (local_rank>=0) means to use corresponding GPU.')
+                        help='local_rank is used in the case of multiple gpus,\
+                            so local_rank is valid only when num_gpus > 0.\
+                            it exactly represents the GPU index used in the current process,\
+                            (local_rank=-1) means to use the default cuda; \
+                            (local_rank>=0) means to use corresponding GPU.')
     ## hyperparameter
     parser.add_argument("--num-train-epochs", type=int)
     parser.add_argument("--train-batch-size", type=int)
@@ -61,14 +68,16 @@ def main():
     parser.add_argument("--update-entity-bias", action='store_true', help='default fixed entity bias')
     parser.add_argument("--seed")
     parser.add_argument("--no-context-entities", action='store_true', help='context entities is used by default')
-    parser.add_argument("--context-entity-selection-order", choices=["natural", "random", "highest_prob"], help='order of entity disambiguation')
+    parser.add_argument("--context-entity-selection-order",
+                        choices=["natural", "random", "highest_prob"],
+                        help='order of entity disambiguation')
 
     # 默认为 config.json 中的配置，命令行参数优先级更高
     with open('./config.yaml', 'r') as fconfig:
         args_config = yaml.load(fconfig, Loader=yaml.FullLoader)
     args = parser.parse_args()
 
-    if args_config['do_train'] or args.do_train:
+    if 'train_args' in args_config.keys():
         train_args = args_config['train_args']
     else:
         train_args = dict({})
@@ -81,8 +90,7 @@ def main():
         else:
             args_config[key] = value
     args_config['train_args'] = train_args
-    with open('./config.yaml', 'w') as fconfig:
-        yaml.dump(args_config, fconfig)
+    args_config_log = args_config.copy()
     args_config.pop('train_args')
     args_config.update(train_args)
     args = argparse.Namespace(**args_config)
@@ -116,15 +124,21 @@ def main():
 
         sys.exit(0)
     else:  ## 单卡进程处理
+        if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
+            os.makedirs(args.output_dir)
         if args.local_rank not in (-1, 0):
             logging.basicConfig(format=LOG_FORMAT, level=logging.WARNING)
         else:
             logging.basicConfig(format=LOG_FORMAT, level=logging.INFO)
-
-        if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
-            os.makedirs(args.output_dir)
-            logger.info("Output dir: %s", args.output_dir)
-
+            fh = logging.FileHandler(filename=os.path.join(args.output_dir, 'run.log'), mode='w+', encoding='utf-8')
+            fh.setFormatter(logging.Formatter(LOG_FORMAT))
+            logger.addHandler(fh)
+        # 保存该次运行的配置
+        logger.info("Output dir: %s", args.output_dir)
+        with open(os.path.join(args.output_dir, 'config.yaml'), 'w+') as fconfig:
+            yaml.dump(args_config_log, fconfig)
+        logger.info("Save config: %s", os.path.join(args.output_dir, 'config.yaml'))
+        # 指定使用的 GPU/CPU
         if args.num_gpus == 0:
             args.device = torch.device("cpu")
         elif args.local_rank == -1:
@@ -132,7 +146,7 @@ def main():
         else:
             os.environ['CUDA_VISIBLE_DEVICES'] = str(args.local_rank)
             args.device = torch.device("cuda")
-
+        # 加载预训练模型
         if args.model_file:
             model_archive = ModelArchive.load(args.model_file)
             args.entity_vocab = model_archive.entity_vocab
@@ -193,7 +207,7 @@ def run(args: argparse.Namespace):
     model.load_state_dict(model_weights, strict=False)
     model.to(args.device)
 
-    wandb.watch(model, log='all', log_graph=True)
+    wandb.watch(model, log_graph=True)
 
     def collate_fn(batch, is_eval=False):
         def create_padded_sequence(attr_name, padding_value):
@@ -266,16 +280,29 @@ def run(args: argparse.Namespace):
                 args.max_candidate_length,
                 args.max_mention_length,
             )
-            eval_dataloader = DataLoader(eval_data, batch_size=1, collate_fn=functools.partial(collate_fn, is_eval=True))
+            eval_dataloader = DataLoader(eval_data,
+                                         batch_size=1,
+                                         collate_fn=functools.partial(collate_fn, is_eval=True))
             predictions_file = None
             if args.output_dir:
                 predictions_file = os.path.join(args.output_dir, "eval_predictions_%s.jsonl" % dataset_name)
             results[dataset_name] = evaluate(args, eval_dataloader, model, entity_vocab, predictions_file)
+            f1 = results[dataset_name]['f1']
+            precision = results[dataset_name]['precision']
+            recall = results[dataset_name]['recall']
+            writer = SummaryWriter(os.path.join(args.output_dir, 'tensorboard/eval_' + dataset_name))
+            writer.add_histogram('f1/', f1)
+            writer.add_histogram('percision/', precision)
+            writer.add_histogram('recall/', recall)
+
+            wandb.log({dataset_name+'/precision': precision, dataset_name+'/recall': recall, dataset_name+'/f1': f1})
 
         if args.output_dir:
             output_eval_file = os.path.join(args.output_dir, "eval_results.txt")
             with open(output_eval_file, "w") as f:
                 json.dump(results, f, indent=2, sort_keys=True)
+
+        logger.info('tensorboard --logdir=' + args.output_dir)
 
     return results
 

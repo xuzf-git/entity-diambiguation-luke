@@ -2,7 +2,7 @@ context_entity_selection_order: highest_prob
 data_dir: ./data/entity_disambiguation
 do_eval: true
 do_test: true
-do_train: true
+do_train: false
 document_split_mode: per_mention
 local_rank: -1
 master_port: 29500
@@ -13,17 +13,22 @@ model_file: ./data/luke_large_ed
 no_context_entities: false
 num_gpus: 1
 num_train_epochs: 2
-output_dir: ./output/results/exp-2021-12-07 16:55:59
+output_dir: ./output/results/exp-2021-12-08 09:29:42
 seed: 1
 test_set:
+  # - test_b
+  # - test_b_ppr
   - ace2004
   - aquaint
+  # - msnbc
+  # - wikipedia
+  # - clueweb
 train_args:
   adam_b1: 0.9
   adam_b2: 0.999
   adam_correct_bias: true
   adam_eps: 1.0e-06
-  fp16: true
+  fp16: false
   fp16_max_loss_scale: 4
   fp16_min_loss_scale: 1
   fp16_opt_level: O2

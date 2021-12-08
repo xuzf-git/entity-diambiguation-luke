@@ -3,41 +3,19 @@ import functools
 import logging
 import os
 
-# import click
 import torch
 from tqdm import tqdm
 from transformers import WEIGHTS_NAME, AdamW, get_constant_schedule_with_warmup, get_linear_schedule_with_warmup
 import wandb
+from torch.utils.tensorboard import SummaryWriter
 
 logger = logging.getLogger(__name__)
-
-
-# def trainer_args(func):
-#     @click.option("--learning-rate", default=1e-5)
-#     @click.option("--lr-schedule", default="warmup_linear", type=click.Choice(["warmup_linear", "warmup_constant"]))
-#     @click.option("--weight-decay", default=0.01)
-#     @click.option("--max-grad-norm", default=0.0)
-#     @click.option("--adam-b1", default=0.9)
-#     @click.option("--adam-b2", default=0.98)
-#     @click.option("--adam-eps", default=1e-6)
-#     @click.option("--adam-correct-bias", is_flag=True)
-#     @click.option("--warmup-proportion", default=0.06)
-#     @click.option("--gradient-accumulation-steps", default=1)
-#     @click.option("--fp16", is_flag=True)
-#     @click.option("--fp16-opt-level", default="O2")
-#     @click.option("--fp16-min-loss-scale", default=1)
-#     @click.option("--fp16-max-loss-scale", default=4)
-#     @click.option("--save-steps", default=0)
-#     @functools.wraps(func)
-#     def wrapper(*args, **kwargs):
-#         return func(*args, **kwargs)
-
-#     return wrapper
 
 
 class Trainer(object):
     def __init__(self, args, model, dataloader, num_train_steps, step_callback=None):
         self.args = args
+        self.writer = SummaryWriter(os.path.join(args.output_dir, "tensorboard/train"))
         self.model = model
         self.dataloader = dataloader
         self.num_train_steps = num_train_steps
@@ -115,13 +93,19 @@ class Trainer(object):
                         pbar.update()
                         global_step += 1
 
+                        self.writer.add_scalar('loss', loss.item(), global_step=global_step)
+                        self.writer.add_scalar('lr', self.scheduler.get_lr()[0])
                         wandb.log({"step": global_step, "loss": loss.item()})
+                        wandb.log({"step": global_step, "lr": self.scheduler.get_lr()[0]})
 
                         if self.step_callback is not None:
                             self.step_callback(model, global_step)
 
                         if (self.args.local_rank in (-1, 0) and self.args.output_dir and self.args.save_steps > 0 and global_step % self.args.save_steps == 0):
                             output_dir = os.path.join(self.args.output_dir, "checkpoint-{}".format(global_step))
+
+                            if not os.path.exists(output_dir):
+                                os.mkdir(output_dir)
 
                             if hasattr(model, "module"):
                                 torch.save(model.module.state_dict(), os.path.join(output_dir, WEIGHTS_NAME))

@@ -6,6 +6,7 @@ import json
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
+import wandb
 
 def evaluate(args, eval_dataloader, model, entity_vocab, output_file=None):
     predictions = []
